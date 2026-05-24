@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import type { AuthSummary, SyncMeta, SyncMode, SyncSummary } from '../lib/cloudSync'
 import type { StorageStats } from '../lib/storage'
+import type { MoodSubmission } from '../types/curation'
 
 const SETTINGS = [
   '你的记录默认只保存在这台设备上。',
   '登录后，可以选择同步到云端。',
-  '支持导出数据与清空本地数据。',
+  '投稿功能默认关闭，仅在你主动上传时生效。',
 ]
 
 type SettingsPageProps = {
@@ -21,6 +23,41 @@ type SettingsPageProps = {
   onRefreshAuth: () => Promise<void>
   onExport: () => void
   onClearLocal: () => void
+  mySubmissions: MoodSubmission[]
+  reviewQueue: MoodSubmission[]
+  onWithdrawSubmission: (submissionId: string) => Promise<void>
+  onApproveSubmission: (submissionId: string, reviewComment?: string) => Promise<void>
+  onRejectSubmission: (submissionId: string, reviewComment?: string) => Promise<void>
+  onFeatureSubmission: (submissionId: string, title: string, description?: string) => Promise<void>
+}
+
+function statusLabel(status: MoodSubmission['status']): string {
+  if (status === 'uploaded') {
+    return '待审核'
+  }
+  if (status === 'approved') {
+    return '已通过'
+  }
+  if (status === 'rejected') {
+    return '未入选'
+  }
+  if (status === 'featured') {
+    return '已入选模板'
+  }
+  return '已撤回'
+}
+
+function statusClass(status: MoodSubmission['status']): string {
+  if (status === 'featured') {
+    return 'is-synced'
+  }
+  if (status === 'rejected') {
+    return 'is-local'
+  }
+  if (status === 'uploaded') {
+    return 'is-dirty'
+  }
+  return 'is-synced'
 }
 
 export function SettingsPage({
@@ -36,9 +73,17 @@ export function SettingsPage({
   onRefreshAuth,
   onExport,
   onClearLocal,
+  mySubmissions,
+  reviewQueue,
+  onWithdrawSubmission,
+  onApproveSubmission,
+  onRejectSubmission,
+  onFeatureSubmission,
 }: SettingsPageProps) {
   const [email, setEmail] = useState('')
-  const [busyAction, setBusyAction] = useState<'signin' | 'sync' | 'signout' | 'refresh' | 'install' | null>(null)
+  const [busyAction, setBusyAction] = useState<
+    'signin' | 'sync' | 'signout' | 'refresh' | 'install' | 'withdraw' | 'review' | null
+  >(null)
   const [hint, setHint] = useState('')
   const syncMetaText = syncMeta.lastSyncedAt
     ? `最近同步：${new Date(syncMeta.lastSyncedAt).toLocaleString('zh-CN', { hour12: false })}（${syncMeta.lastMode === 'merge' ? '安全合并' : syncMeta.lastMode === 'push_local' ? '本地覆盖云端' : '云端覆盖本地'}）`
@@ -152,6 +197,69 @@ export function SettingsPage({
     setHint('本地记录已清空。')
   }
 
+  const handleWithdraw = async (submissionId: string) => {
+    const ok = window.confirm('确定撤回这条投稿吗？撤回后将从精选池移除。')
+    if (!ok) {
+      return
+    }
+    try {
+      setBusyAction('withdraw')
+      await onWithdrawSubmission(submissionId)
+      setHint('投稿已撤回。')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '撤回失败。'
+      setHint(message)
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleApprove = async (submissionId: string) => {
+    const review = window.prompt('可选：给用户留一句通过理由', '这条心情很有细节，已通过审核。') ?? undefined
+    try {
+      setBusyAction('review')
+      await onApproveSubmission(submissionId, review)
+      setHint('已标记为通过。')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '审核失败。'
+      setHint(message)
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleReject = async (submissionId: string) => {
+    const review = window.prompt('可选：给用户留一句鼓励反馈', '暂不入选精选，欢迎继续投稿。') ?? undefined
+    try {
+      setBusyAction('review')
+      await onRejectSubmission(submissionId, review)
+      setHint('已标记为未入选。')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '审核失败。'
+      setHint(message)
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleFeature = async (submissionId: string) => {
+    const title = window.prompt('模板标题', '今日精选')
+    if (!title) {
+      return
+    }
+    const description = window.prompt('可选：模板说明', '一张很克制、细腻的表情。') ?? undefined
+    try {
+      setBusyAction('review')
+      await onFeatureSubmission(submissionId, title, description)
+      setHint('已加入模板库。')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '入选模板失败。'
+      setHint(message)
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
   return (
     <section className="panel">
       <div className="panel-head">
@@ -167,6 +275,7 @@ export function SettingsPage({
             <p className="settings-auth-state">
               状态：
               {auth.signedIn ? `已登录（${auth.email ?? '未知邮箱'}）` : '未登录'}
+              {auth.signedIn ? ` · 权限：${auth.role === 'admin' ? '管理员' : '普通用户'}` : ''}
             </p>
             {!auth.signedIn ? (
               <div className="settings-auth-signin">
@@ -240,6 +349,87 @@ export function SettingsPage({
           冲突策略说明：默认使用“安全合并”，按更新时间保留最新记录；覆盖模式会替换另一端数据。
         </p>
       </div>
+
+      {auth.signedIn ? (
+        <div className="settings-install" aria-label="我的投稿">
+          <p className="settings-stats-title">我的投稿</p>
+          {mySubmissions.length === 0 ? (
+            <p className="settings-note">你还没有投稿。去今日页勾选授权后即可上传。</p>
+          ) : (
+            <div className="submission-list">
+              {mySubmissions.map((submission) => (
+                <article key={submission.id} className="submission-card">
+                  <MoodFaceSvg face={submission.face} className="submission-face" />
+                  <div className="submission-copy">
+                    <p className="submission-title">{submission.entryDate}</p>
+                    <p className={`sync-pill ${statusClass(submission.status)}`}>状态：{statusLabel(submission.status)}</p>
+                    {submission.reviewComment ? <p className="settings-note">反馈：{submission.reviewComment}</p> : null}
+                    <div className="settings-actions">
+                      <button
+                        type="button"
+                        className="ghost-btn warn"
+                        disabled={busyAction !== null}
+                        onClick={() => void handleWithdraw(submission.id)}
+                      >
+                        撤回投稿
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {auth.signedIn && auth.role === 'admin' ? (
+        <div className="settings-install" aria-label="审核队列">
+          <p className="settings-stats-title">后台精选审核</p>
+          <p className="settings-note">待审核状态会集中在这里，你可以通过、驳回或直接入选模板。</p>
+          {reviewQueue.length === 0 ? (
+            <p className="settings-note">当前没有待处理投稿。</p>
+          ) : (
+            <div className="submission-list">
+              {reviewQueue.map((submission) => (
+                <article key={submission.id} className="submission-card">
+                  <MoodFaceSvg face={submission.face} className="submission-face" />
+                  <div className="submission-copy">
+                    <p className="submission-title">{submission.entryDate} · 用户 {submission.userId.slice(0, 8)}</p>
+                    <p className={`sync-pill ${statusClass(submission.status)}`}>状态：{statusLabel(submission.status)}</p>
+                    <p className="settings-note">备注：{submission.note || '无备注'}</p>
+                    <div className="settings-actions">
+                      <button
+                        type="button"
+                        className="ghost-btn"
+                        disabled={busyAction !== null}
+                        onClick={() => void handleApprove(submission.id)}
+                      >
+                        通过
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-btn warn"
+                        disabled={busyAction !== null}
+                        onClick={() => void handleReject(submission.id)}
+                      >
+                        驳回
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-btn"
+                        disabled={busyAction !== null}
+                        onClick={() => void handleFeature(submission.id)}
+                      >
+                        入选模板
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="settings-install" aria-label="安装应用">
         <p className="settings-stats-title">安装到设备</p>

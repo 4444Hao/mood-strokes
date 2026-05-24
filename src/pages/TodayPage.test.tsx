@@ -3,14 +3,22 @@ import { getDefaultPreset } from '../lib/presets'
 import { TodayPage } from './TodayPage'
 
 describe('TodayPage', () => {
+  const auth = {
+    configured: false,
+    signedIn: false,
+  }
+
   it('shows unified three-stroke draw hint when no entry exists', () => {
     render(
       <TodayPage
         dateKey="2026-05-24"
         maxDateKey="2026-05-24"
         dateLabel="2026 年 5 月 24 日"
+        auth={auth}
+        featuredTemplates={[]}
         onDateChange={() => {}}
         onSave={() => {}}
+        onSubmitMood={async () => {}}
       />,
     )
     expect(screen.getByText('先自由画三笔（0/3）。画完后进入微调。')).toBeInTheDocument()
@@ -25,8 +33,11 @@ describe('TodayPage', () => {
         dateKey="2026-05-24"
         maxDateKey="2026-05-24"
         dateLabel="2026 年 5 月 24 日"
+        auth={auth}
+        featuredTemplates={[]}
         onDateChange={() => {}}
         onSave={onSave}
+        onSubmitMood={async () => {}}
         entry={{
           id: 'e1',
           date: '2026-05-24',

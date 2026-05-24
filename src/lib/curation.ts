@@ -1,0 +1,402 @@
+import type { MoodFace } from '../types/mood'
+import type {
+  FeaturedTemplate,
+  MoodSubmission,
+  SubmitMoodPayload,
+  SubmissionStatus,
+  UserRole,
+} from '../types/curation'
+import {
+  FEATURED_TEMPLATES_TABLE,
+  MOOD_SUBMISSIONS_TABLE,
+  PROFILES_TABLE,
+  getSupabaseClient,
+  isSupabaseConfigured,
+} from './supabase'
+
+type SubmissionRow = {
+  id: string
+  user_id: string
+  entry_date: string
+  face: MoodFace
+  note: string | null
+  share_caption: string | null
+  consent_public: boolean
+  consent_template: boolean
+  status: SubmissionStatus
+  review_comment: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+type FeaturedTemplateRow = {
+  id: string
+  source_submission_id: string | null
+  created_by: string
+  title: string
+  description: string | null
+  face: MoodFace
+  note: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type CurationAuthSummary = {
+  configured: boolean
+  signedIn: boolean
+  email?: string
+  role?: UserRole
+}
+
+function ensureConfigured(): void {
+  if (!isSupabaseConfigured()) {
+    throw new Error('未配置 Supabase，请先设置 VITE_SUPABASE_URL 与 VITE_SUPABASE_ANON_KEY。')
+  }
+}
+
+async function requireSessionUser(): Promise<{ id: string; email?: string }> {
+  ensureConfigured()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+  const { data, error } = await client.auth.getSession()
+  if (error) {
+    throw new Error(error.message)
+  }
+  if (!data.session?.user) {
+    throw new Error('当前未登录，请先登录后再操作。')
+  }
+  return {
+    id: data.session.user.id,
+    email: data.session.user.email,
+  }
+}
+
+function fromSubmissionRow(row: SubmissionRow): MoodSubmission {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    entryDate: row.entry_date,
+    face: row.face,
+    note: row.note ?? undefined,
+    shareCaption: row.share_caption ?? undefined,
+    consentPublic: row.consent_public,
+    consentTemplate: row.consent_template,
+    status: row.status,
+    reviewComment: row.review_comment ?? undefined,
+    reviewedBy: row.reviewed_by ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function fromTemplateRow(row: FeaturedTemplateRow): FeaturedTemplate {
+  return {
+    id: row.id,
+    sourceSubmissionId: row.source_submission_id ?? undefined,
+    createdBy: row.created_by,
+    title: row.title,
+    description: row.description ?? undefined,
+    face: row.face,
+    note: row.note ?? undefined,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+  }
+}
+
+export async function getCurationAuthSummary(): Promise<CurationAuthSummary> {
+  if (!isSupabaseConfigured()) {
+    return { configured: false, signedIn: false }
+  }
+  const client = getSupabaseClient()
+  if (!client) {
+    return { configured: false, signedIn: false }
+  }
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.user) {
+    return { configured: true, signedIn: false }
+  }
+
+  const user = data.session.user
+  const { data: profile } = await client
+    .from(PROFILES_TABLE)
+    .select('role')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  return {
+    configured: true,
+    signedIn: true,
+    email: user.email,
+    role: (profile?.role as UserRole | undefined) ?? 'user',
+  }
+}
+
+export async function listFeaturedTemplates(limit = 12): Promise<FeaturedTemplate[]> {
+  ensureConfigured()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { data, error } = await client
+    .from(FEATURED_TEMPLATES_TABLE)
+    .select('id,source_submission_id,created_by,title,description,face,note,is_active,created_at')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as FeaturedTemplateRow[]).map(fromTemplateRow)
+}
+
+export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodSubmission> {
+  const user = await requireSessionUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  if (!payload.consentPublic || !payload.consentTemplate) {
+    throw new Error('投稿前请先确认公开展示与模板授权。')
+  }
+
+  const row = {
+    user_id: user.id,
+    entry_date: payload.entryDate,
+    face: payload.face,
+    note: payload.note?.trim() || null,
+    share_caption: payload.shareCaption?.trim() || null,
+    consent_public: payload.consentPublic,
+    consent_template: payload.consentTemplate,
+    status: 'uploaded' as const,
+    review_comment: null,
+    reviewed_by: null,
+    reviewed_at: null,
+  }
+
+  const { data, error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .insert(row)
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return fromSubmissionRow(data as SubmissionRow)
+}
+
+export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
+  const user = await requireSessionUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { data, error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+}
+
+export async function withdrawSubmission(submissionId: string): Promise<void> {
+  const user = await requireSessionUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .delete()
+    .eq('id', submissionId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+async function requireAdminUser(): Promise<{ id: string }> {
+  const user = await requireSessionUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { data, error } = await client
+    .from(PROFILES_TABLE)
+    .select('user_id,role')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data || data.role !== 'admin') {
+    throw new Error('当前账号不是管理员，无法进行精选审核。')
+  }
+
+  return { id: user.id }
+}
+
+export async function listReviewQueue(limit = 60): Promise<MoodSubmission[]> {
+  await requireAdminUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { data, error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .in('status', ['uploaded', 'approved', 'rejected', 'featured'])
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+}
+
+export async function rejectSubmission(submissionId: string, reviewComment?: string): Promise<void> {
+  const admin = await requireAdminUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .update({
+      status: 'rejected',
+      review_comment: reviewComment?.trim() || '暂不入选精选，欢迎继续投稿。',
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', submissionId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export async function approveSubmission(submissionId: string, reviewComment?: string): Promise<void> {
+  const admin = await requireAdminUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { error } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .update({
+      status: 'approved',
+      review_comment: reviewComment?.trim() || '这条心情很有细节，已通过审核。',
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', submissionId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export async function featureSubmission(params: {
+  submissionId: string
+  title: string
+  description?: string
+}): Promise<void> {
+  const admin = await requireAdminUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { data: submission, error: fetchError } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .eq('id', params.submissionId)
+    .single()
+
+  if (fetchError) {
+    throw new Error(fetchError.message)
+  }
+
+  const row = submission as SubmissionRow
+  if (!row.consent_template) {
+    throw new Error('该投稿未授权作为模板，无法入选。')
+  }
+
+  const { error: insertError } = await client
+    .from(FEATURED_TEMPLATES_TABLE)
+    .insert({
+      source_submission_id: row.id,
+      created_by: admin.id,
+      title: params.title.trim() || '今日精选',
+      description: params.description?.trim() || null,
+      face: row.face,
+      note: row.note,
+      is_active: true,
+    })
+
+  if (insertError) {
+    throw new Error(insertError.message)
+  }
+
+  const { error: updateError } = await client
+    .from(MOOD_SUBMISSIONS_TABLE)
+    .update({
+      status: 'featured',
+      review_comment: '已入选模板库，感谢你的投稿。',
+      reviewed_by: admin.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id)
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+}
+
+export async function archiveFeaturedTemplate(templateId: string): Promise<void> {
+  await requireAdminUser()
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+
+  const { error } = await client
+    .from(FEATURED_TEMPLATES_TABLE)
+    .update({ is_active: false })
+    .eq('id', templateId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}

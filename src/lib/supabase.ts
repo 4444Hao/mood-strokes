@@ -27,3 +27,6 @@ export function getSupabaseClient(): SupabaseClient | null {
 }
 
 export const MOOD_ENTRIES_TABLE = 'mood_entries'
+export const PROFILES_TABLE = 'profiles'
+export const MOOD_SUBMISSIONS_TABLE = 'mood_submissions'
+export const FEATURED_TEMPLATES_TABLE = 'featured_templates'

@@ -1,11 +1,12 @@
 import type { Session } from '@supabase/supabase-js'
 import type { MoodEntry } from '../types/mood'
+import type { UserRole } from '../types/curation'
 import {
   listAllEntries,
   markEntriesSyncedByDate,
   replaceAllEntries,
 } from './storage'
-import { getSupabaseClient, isSupabaseConfigured, MOOD_ENTRIES_TABLE } from './supabase'
+import { getSupabaseClient, isSupabaseConfigured, MOOD_ENTRIES_TABLE, PROFILES_TABLE } from './supabase'
 
 const SYNC_META_KEY = 'three-line-mood.sync-meta.v1'
 
@@ -22,6 +23,7 @@ export type AuthSummary = {
   configured: boolean
   signedIn: boolean
   email?: string
+  role?: UserRole
 }
 
 export type SyncSummary = {
@@ -201,10 +203,17 @@ export async function getAuthSummary(): Promise<AuthSummary> {
   if (error || !data.session) {
     return { configured: true, signedIn: false }
   }
+  const userId = data.session.user.id
+  const { data: profile } = await client
+    .from(PROFILES_TABLE)
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle()
   return {
     configured: true,
     signedIn: true,
     email: data.session.user.email,
+    role: (profile?.role as UserRole | undefined) ?? 'user',
   }
 }
 

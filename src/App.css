@@ -236,6 +236,35 @@
   color: var(--ink-soft);
 }
 
+.template-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  margin-top: 0.6rem;
+}
+
+.template-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 251, 243, 0.72);
+  padding: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.template-face {
+  width: 74px;
+  aspect-ratio: 1 / 1;
+}
+
+.template-title {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
 .parametric-editor {
   display: flex;
   flex-direction: column;
@@ -666,6 +695,46 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.consent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.submission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.submission-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.72);
+  padding: 0.55rem;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.submission-face {
+  width: 74px;
+  min-width: 74px;
+  aspect-ratio: 1 / 1;
+}
+
+.submission-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.submission-title {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .ghost-btn {

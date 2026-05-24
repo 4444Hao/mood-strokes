@@ -12,6 +12,16 @@ import {
   type SyncSummary,
 } from './lib/cloudSync'
 import {
+  approveSubmission,
+  featureSubmission,
+  listFeaturedTemplates,
+  listMySubmissions,
+  listReviewQueue,
+  rejectSubmission,
+  submitMoodEntry,
+  withdrawSubmission,
+} from './lib/curation'
+import {
   compareMonthKey,
   formatCnDate,
   formatCnMonth,
@@ -32,6 +42,7 @@ import { MonthPage } from './pages/MonthPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import type { MoodEntry, MoodFace } from './types/mood'
+import type { FeaturedTemplate, MoodSubmission, SubmitMoodPayload } from './types/curation'
 
 type PageId = 'today' | 'month' | 'settings'
 type BeforeInstallPromptEvent = Event & {
@@ -73,6 +84,9 @@ function App() {
     signedIn: false,
   })
   const [syncMeta, setSyncMeta] = useState<SyncMeta>({})
+  const [featuredTemplates, setFeaturedTemplates] = useState<FeaturedTemplate[]>([])
+  const [mySubmissions, setMySubmissions] = useState<MoodSubmission[]>([])
+  const [reviewQueue, setReviewQueue] = useState<MoodSubmission[]>([])
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
 
@@ -86,6 +100,16 @@ function App() {
     reloadEntries()
     setSyncMeta(getSyncMeta())
   }, [reloadEntries])
+
+  useEffect(() => {
+    if (!authSummary.configured) {
+      setFeaturedTemplates([])
+      return
+    }
+    void listFeaturedTemplates()
+      .then(setFeaturedTemplates)
+      .catch(() => setFeaturedTemplates([]))
+  }, [authSummary.configured])
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -193,6 +217,80 @@ function App() {
     return false
   }, [installPromptEvent])
 
+  const reloadCuration = useCallback(async () => {
+    if (!authSummary.configured || !authSummary.signedIn) {
+      setMySubmissions([])
+      setReviewQueue([])
+      return
+    }
+    try {
+      const mine = await listMySubmissions()
+      setMySubmissions(mine)
+    } catch {
+      setMySubmissions([])
+    }
+    if (authSummary.role === 'admin') {
+      try {
+        const queue = await listReviewQueue()
+        setReviewQueue(queue)
+      } catch {
+        setReviewQueue([])
+      }
+    } else {
+      setReviewQueue([])
+    }
+  }, [authSummary.configured, authSummary.role, authSummary.signedIn])
+
+  useEffect(() => {
+    void reloadCuration()
+  }, [reloadCuration])
+
+  const handleSubmitMood = useCallback(
+    async (payload: SubmitMoodPayload) => {
+      await submitMoodEntry(payload)
+      await reloadCuration()
+    },
+    [reloadCuration],
+  )
+
+  const handleWithdrawSubmission = useCallback(
+    async (submissionId: string) => {
+      await withdrawSubmission(submissionId)
+      await reloadCuration()
+    },
+    [reloadCuration],
+  )
+
+  const handleApproveSubmission = useCallback(
+    async (submissionId: string, reviewComment?: string) => {
+      await approveSubmission(submissionId, reviewComment)
+      await reloadCuration()
+    },
+    [reloadCuration],
+  )
+
+  const handleRejectSubmission = useCallback(
+    async (submissionId: string, reviewComment?: string) => {
+      await rejectSubmission(submissionId, reviewComment)
+      await reloadCuration()
+    },
+    [reloadCuration],
+  )
+
+  const handleFeatureSubmission = useCallback(
+    async (submissionId: string, title: string, description?: string) => {
+      await featureSubmission({ submissionId, title, description })
+      await reloadCuration()
+      try {
+        const templates = await listFeaturedTemplates()
+        setFeaturedTemplates(templates)
+      } catch {
+        setFeaturedTemplates([])
+      }
+    },
+    [reloadCuration],
+  )
+
   const handlePrevMonth = useCallback(() => {
     setMonthKey((prev) => shiftMonthKey(prev, -1))
   }, [])
@@ -241,6 +339,12 @@ function App() {
           onRefreshAuth={refreshAuth}
           onExport={handleExportLocal}
           onClearLocal={handleClearLocal}
+          mySubmissions={mySubmissions}
+          reviewQueue={reviewQueue}
+          onWithdrawSubmission={handleWithdrawSubmission}
+          onApproveSubmission={handleApproveSubmission}
+          onRejectSubmission={handleRejectSubmission}
+          onFeatureSubmission={handleFeatureSubmission}
         />
       )
     }
@@ -250,8 +354,11 @@ function App() {
         maxDateKey={todayKey}
         dateLabel={formatCnDate(entryDateKey)}
         entry={todayEntry}
+        auth={authSummary}
+        featuredTemplates={featuredTemplates}
         onDateChange={handleEntryDateChange}
         onSave={handleSaveToday}
+        onSubmitMood={handleSubmitMood}
       />
     )
   }, [
@@ -279,6 +386,14 @@ function App() {
     currentMonthKey,
     todayEntry,
     todayKey,
+    featuredTemplates,
+    mySubmissions,
+    reviewQueue,
+    handleSubmitMood,
+    handleWithdrawSubmission,
+    handleApproveSubmission,
+    handleRejectSubmission,
+    handleFeatureSubmission,
   ])
 
   return (
