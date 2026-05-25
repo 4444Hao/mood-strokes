@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import { daysInMonth } from '../lib/date'
 import type { MoodEntry } from '../types/mood'
@@ -103,13 +103,81 @@ export function MonthPage({
   const emptyDayQuote = quoteForDate(selectedDateKey)
   const selectedWeekStart = Math.floor((selectedDay - 1) / 7) * 7 + 1
   const weekDays = Array.from({ length: 7 }, (_, i) => selectedWeekStart + i).filter((day) => day <= totalDays)
+  const weekDayPages = useMemo(() => {
+    const pages: number[][] = []
+    for (let i = 0; i < weekDays.length; i += 3) {
+      pages.push(weekDays.slice(i, i + 3))
+    }
+    return pages
+  }, [weekDays])
+  const selectedWeekPageIndex = Math.floor((selectedDay - selectedWeekStart) / 3)
   const canPrevWeek = selectedWeekStart > 1
   const canNextWeek = selectedWeekStart + 7 <= totalDays
+  const weekCarouselRef = useRef<HTMLDivElement | null>(null)
   const updatedAtLabel = selectedEntry
     ? new Date(selectedEntry.updatedAt).toLocaleString('zh-CN', {
         hour12: false,
       })
     : undefined
+
+  useEffect(() => {
+    if (viewMode !== 'week') {
+      return
+    }
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+    if (!window.matchMedia('(max-width: 680px)').matches) {
+      return
+    }
+    const host = weekCarouselRef.current
+    if (!host) {
+      return
+    }
+    const page = host.querySelector<HTMLElement>(`[data-week-page-index="${selectedWeekPageIndex}"]`)
+    if (!page) {
+      return
+    }
+    host.scrollTo({
+      left: page.offsetLeft,
+      behavior: 'smooth',
+    })
+  }, [selectedWeekPageIndex, viewMode])
+
+  const renderWeekDayCard = (day: number, extraClassName = '') => {
+    const entry = entryByDay.get(day)
+    return (
+      <article
+        key={day}
+        className={`week-day-card ${extraClassName} ${selectedDay === day ? 'is-selected' : ''} ${entry ? 'has-face' : 'is-empty'}`}
+        onClick={() => setSelectedDay(day)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            setSelectedDay(day)
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`${day}号${entry ? '有记录' : '无记录'}`}
+      >
+        <span className="day-label">{day}</span>
+        {entry ? (
+          <span
+            className={`sync-dot ${syncStatusClass(entry)}`}
+            title={syncStatusLabel(entry)}
+            aria-label={syncStatusLabel(entry)}
+          />
+        ) : null}
+        {entry ? (
+          <MoodFaceSvg face={entry.face} className="week-face-thumb" />
+        ) : (
+          <div className="face-dot" aria-hidden>
+            ·
+          </div>
+        )}
+      </article>
+    )
+  }
 
   return (
     <section className="panel">
@@ -184,41 +252,15 @@ export function MonthPage({
             </button>
           </div>
 
-          <div className="week-grid" aria-label="周视图表情墙">
-            {weekDays.map((day) => {
-              const entry = entryByDay.get(day)
-              return (
-                <article
-                  key={day}
-                  className={`week-day-card ${selectedDay === day ? 'is-selected' : ''} ${entry ? 'has-face' : 'is-empty'}`}
-                  onClick={() => setSelectedDay(day)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      setSelectedDay(day)
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${day}号${entry ? '有记录' : '无记录'}`}
-                >
-                  <span className="day-label">{day}</span>
-                  {entry ? (
-                    <span
-                      className={`sync-dot ${syncStatusClass(entry)}`}
-                      title={syncStatusLabel(entry)}
-                      aria-label={syncStatusLabel(entry)}
-                    />
-                  ) : null}
-                  {entry ? (
-                    <MoodFaceSvg face={entry.face} className="week-face-thumb" />
-                  ) : (
-                    <div className="face-dot" aria-hidden>
-                      ·
-                    </div>
-                  )}
-                </article>
-              )
-            })}
+          <div className="week-grid week-grid-desktop" aria-label="周视图表情墙">
+            {weekDays.map((day) => renderWeekDayCard(day))}
+          </div>
+          <div className="week-carousel week-grid-mobile" aria-label="周视图表情墙" ref={weekCarouselRef}>
+            {weekDayPages.map((group, groupIndex) => (
+              <div key={groupIndex} className="week-page" data-week-page-index={groupIndex}>
+                {group.map((day) => renderWeekDayCard(day, 'week-day-card-mobile'))}
+              </div>
+            ))}
           </div>
 
           <section className="month-detail">

@@ -130,6 +130,20 @@
   gap: 0.55rem;
 }
 
+.week-grid-mobile {
+  display: none;
+}
+
+.week-carousel {
+  display: none;
+}
+
+.week-page {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
 .week-day-card {
   position: relative;
   min-height: 106px;
@@ -882,21 +896,58 @@ textarea:disabled {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
-  .week-grid {
-    grid-auto-flow: column;
-    grid-template-columns: unset;
-    grid-auto-columns: minmax(76px, 1fr);
-    overflow-x: auto;
-    padding-bottom: 0.2rem;
-    scrollbar-width: thin;
+  .month-toolbar,
+  .month-view-toggle {
+    gap: 0.45rem;
   }
 
-  .week-day-card {
-    min-height: 118px;
+  .month-toolbar .ghost-btn,
+  .month-view-toggle .ghost-btn,
+  .week-toolbar .ghost-btn {
+    padding: 0.4rem 0.78rem;
+    font-size: 0.9rem;
+  }
+
+  .week-range {
+    font-size: 0.84rem;
+  }
+
+  .week-grid-desktop {
+    display: none;
+  }
+
+  .week-grid-mobile {
+    display: block;
+  }
+
+  .week-carousel {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    overflow-x: auto;
+    gap: 0.65rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 0.2rem;
+  }
+
+  .week-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .week-page {
+    scroll-snap-align: start;
+  }
+
+  .week-day-card-mobile {
+    min-height: 136px;
+    border-radius: 18px;
+    padding: 0.52rem 0.46rem;
   }
 
   .week-face-thumb {
-    max-width: 62px;
+    max-width: 84px;
   }
 
   .day-card {
