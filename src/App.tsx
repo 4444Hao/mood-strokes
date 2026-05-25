@@ -61,6 +61,8 @@ const PAGE_TABS: PageTab[] = [
   { id: 'settings', label: '设置' },
 ]
 
+const EARLIEST_DATE_KEY = '2026-05-01'
+
 function App() {
   const [activePage, setActivePage] = useState<PageId>('today')
   const todayKey = toDateKey(new Date())
@@ -351,6 +353,7 @@ function App() {
     return (
       <TodayPage
         dateKey={entryDateKey}
+        minDateKey={EARLIEST_DATE_KEY}
         maxDateKey={todayKey}
         dateLabel={formatCnDate(entryDateKey)}
         entry={todayEntry}
@@ -400,8 +403,8 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <p className="app-mark">三笔心情</p>
-        <h1 className="app-title">今天的你，是哪张脸？</h1>
-        <p className="app-subtitle">拖一拖，画出今天。</p>
+        <h1 className="app-title">三笔极简，情绪万千。</h1>
+        <p className="app-subtitle">今天的你，是哪张脸？</p>
       </header>
 
       <nav className="main-tabs" aria-label="主页面">

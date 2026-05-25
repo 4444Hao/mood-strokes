@@ -7,6 +7,7 @@ import type { MoodEntry, MoodFace } from '../types/mood'
 
 type TodayPageProps = {
   dateKey: string
+  minDateKey: string
   maxDateKey: string
   dateLabel: string
   entry?: MoodEntry
@@ -15,6 +16,28 @@ type TodayPageProps = {
   onDateChange: (dateKey: string) => void
   onSave: (note: string, face: MoodFace) => void
   onSubmitMood: (payload: SubmitMoodPayload) => Promise<void>
+}
+
+const NOTE_PROMPTS = [
+  '心似白云常自在，意如流水任东西。',
+  '平静本身就是一种答案。',
+  '今天有微小的快乐发生。',
+  '嘴角没下来过。',
+  '阳光正好，我也很好。',
+  '没什么，就是有点累。',
+  '说不清，但和昨天不太一样。',
+  '介于微笑和叹气之间。',
+  '三笔极简，情绪万千。',
+  '嘿嘿。',
+]
+
+function promptForDate(dateKey: string): string {
+  const key = dateKey || '2026-05-01'
+  let hash = 0
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash * 33 + key.charCodeAt(i)) >>> 0
+  }
+  return NOTE_PROMPTS[hash % NOTE_PROMPTS.length]
 }
 
 function syncStatusLabel(entry?: MoodEntry): string {
@@ -45,6 +68,7 @@ function syncStatusClass(entry?: MoodEntry): string {
 
 export function TodayPage({
   dateKey,
+  minDateKey,
   maxDateKey,
   dateLabel,
   entry,
@@ -62,6 +86,7 @@ export function TodayPage({
   const [shareCaption, setShareCaption] = useState('')
   const [submitBusy, setSubmitBusy] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
+  const notePrompt = promptForDate(dateKey)
 
   useEffect(() => {
     setNote(entry?.note ?? '')
@@ -127,6 +152,7 @@ export function TodayPage({
         <input
           type="date"
           value={dateKey}
+          min={minDateKey}
           max={maxDateKey}
           onChange={(event) => onDateChange(event.target.value)}
         />
@@ -158,11 +184,12 @@ export function TodayPage({
       </div>
 
       <label className="note-box">
-        <span>要不要留下一句话？</span>
+        <span>简单描述复杂的心...</span>
+        <p className="editor-hint">{notePrompt}</p>
         <textarea
           rows={3}
           maxLength={120}
-          placeholder="今天只是有点累。"
+          placeholder={notePrompt}
           value={note}
           onChange={(event) => setNote(event.target.value)}
         />

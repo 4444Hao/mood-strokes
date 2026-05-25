@@ -12,6 +12,7 @@ describe('TodayPage', () => {
     render(
       <TodayPage
         dateKey="2026-05-24"
+        minDateKey="2026-05-01"
         maxDateKey="2026-05-24"
         dateLabel="2026 年 5 月 24 日"
         auth={auth}
@@ -21,7 +22,7 @@ describe('TodayPage', () => {
         onSubmitMood={async () => {}}
       />,
     )
-    expect(screen.getByText('先自由画三笔（0/3）。画完后进入微调。')).toBeInTheDocument()
+    expect(screen.getByText('先自由画三笔（0/3）。画完后可直接完成，或进入微调。')).toBeInTheDocument()
     expect(screen.getByText('同步状态：尚未保存')).toBeInTheDocument()
   })
 
@@ -31,6 +32,7 @@ describe('TodayPage', () => {
     render(
       <TodayPage
         dateKey="2026-05-24"
+        minDateKey="2026-05-01"
         maxDateKey="2026-05-24"
         dateLabel="2026 年 5 月 24 日"
         auth={auth}
@@ -50,7 +52,7 @@ describe('TodayPage', () => {
       />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('今天只是有点累。'), {
+    fireEvent.change(screen.getAllByRole('textbox')[0], {
       target: { value: '今天慢慢来' },
     })
     fireEvent.click(screen.getByRole('button', { name: '保存今天的脸' }))

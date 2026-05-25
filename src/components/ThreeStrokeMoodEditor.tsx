@@ -131,6 +131,13 @@ function createEditableStrokes(strokes: Stroke[]): EditableStroke[] {
   }))
 }
 
+function toExpressiveFace(strokes: EditableStroke[]): MoodFace {
+  return {
+    mode: 'expressive',
+    strokes: strokes.map(cloneEditableStroke),
+  }
+}
+
 function sampleArcPoint(arc: ArcParams, t: number): Point {
   const clampedT = clamp(t, 0, 1)
   const half = arc.width / 2
@@ -179,8 +186,10 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const [strokes, setStrokes] = useState<Stroke[]>([])
   const [draft, setDraft] = useState<Point[] | null>(null)
   const [editableStrokes, setEditableStrokes] = useState<EditableStroke[]>([])
+  const [completedFace, setCompletedFace] = useState<MoodFace | undefined>(undefined)
   const [selectedStrokeId, setSelectedStrokeId] = useState<string | null>(null)
   const [dragState, setDragState] = useState<DragState>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastExternalRef = useRef<MoodFace | undefined>(undefined)
@@ -215,6 +224,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       setStrokes([])
       setDraft(null)
       setEditableStrokes([])
+      setCompletedFace(undefined)
       setSelectedStrokeId(null)
       setDragState(null)
       setIsEditing(false)
@@ -227,7 +237,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       setEditableStrokes(cloned)
       setStrokes([])
       setDraft(null)
+      setCompletedFace(undefined)
       setSelectedStrokeId(cloned[0]?.id ?? null)
+      setShowAdvanced(false)
       setIsEditing(false)
       return
     }
@@ -238,7 +250,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       setEditableStrokes(converted)
       setStrokes([])
       setDraft(null)
+      setCompletedFace(undefined)
       setSelectedStrokeId(converted[0]?.id ?? null)
+      setShowAdvanced(false)
       setIsEditing(false)
       return
     }
@@ -247,23 +261,27 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     setStrokes(value.strokes.slice(0, 3))
     setDraft(null)
     setEditableStrokes([])
+    setCompletedFace(undefined)
     setSelectedStrokeId(null)
     setDragState(null)
+    setShowAdvanced(false)
     setIsEditing(false)
   }, [value])
 
   useEffect(() => {
-    if (phase !== 'tune' || editableStrokes.length === 0) {
-      onChange(undefined)
+    if (phase === 'tune' && editableStrokes.length > 0) {
+      const next = toExpressiveFace(editableStrokes)
+      lastExternalRef.current = next
+      onChange(next)
       return
     }
-    const next: MoodFace = {
-      mode: 'expressive',
-      strokes: editableStrokes.map(cloneEditableStroke),
+    if (phase === 'draw' && completedFace) {
+      lastExternalRef.current = completedFace
+      onChange(completedFace)
+      return
     }
-    lastExternalRef.current = next
-    onChange(next)
-  }, [editableStrokes, onChange, phase])
+    onChange(undefined)
+  }, [editableStrokes, completedFace, onChange, phase])
 
   const adjustedStrokeMap = useMemo(() => {
     const map = new Map<string, Point[]>()
@@ -296,6 +314,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     const svg = event.currentTarget
     svg.setPointerCapture(event.pointerId)
     const point = getSvgPoint(svg, event.clientX, event.clientY)
+    setCompletedFace(undefined)
     setDraft([{ ...point, t: Date.now(), pressure: event.pressure > 0 ? event.pressure : undefined }])
   }
 
@@ -332,6 +351,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       return
     }
     setStrokes((prev) => prev.slice(0, -1))
+    setCompletedFace(undefined)
   }
 
   const clearAll = () => {
@@ -339,10 +359,23 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     setStrokes([])
     setDraft(null)
     setEditableStrokes([])
+    setCompletedFace(undefined)
     setSelectedStrokeId(null)
     setDragState(null)
+    setShowAdvanced(false)
     setIsEditing(false)
     onChange(undefined)
+  }
+
+  const completeDirectly = () => {
+    if (strokes.length !== 3) {
+      return
+    }
+    const next = createEditableStrokes(strokes)
+    setCompletedFace(toExpressiveFace(next))
+    setIsEditing(false)
+    setDragState(null)
+    setShowAdvanced(false)
   }
 
   const enterTune = () => {
@@ -351,7 +384,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     }
     const next = createEditableStrokes(strokes)
     setEditableStrokes(next)
+    setCompletedFace(undefined)
     setSelectedStrokeId(next[0]?.id ?? null)
+    setShowAdvanced(false)
     setPhase('tune')
     activateEditing()
   }
@@ -359,8 +394,10 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const backToDraw = () => {
     setPhase('draw')
     setEditableStrokes([])
+    setCompletedFace(undefined)
     setSelectedStrokeId(null)
     setDragState(null)
+    setShowAdvanced(false)
     setIsEditing(false)
     onChange(undefined)
   }
@@ -669,12 +706,22 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
             <button type="button" className="ghost-btn warn" onClick={clearAll} disabled={strokes.length === 0}>
               清空
             </button>
+            <button type="button" className="ghost-btn" onClick={completeDirectly} disabled={strokes.length !== 3}>
+              直接完成
+            </button>
             <button type="button" className="primary-btn" onClick={enterTune} disabled={strokes.length !== 3}>
               进入微调
             </button>
           </>
         ) : (
           <>
+            <button
+              type="button"
+              className={`ghost-btn ${showAdvanced ? 'is-active' : ''}`}
+              onClick={() => setShowAdvanced((prev) => !prev)}
+            >
+              {showAdvanced ? '收起更多' : '更多'}
+            </button>
             <button type="button" className="ghost-btn" onClick={backToDraw}>
               返回重画
             </button>
@@ -688,7 +735,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
         )}
       </div>
 
-      {phase === 'tune' && selectedStroke ? (
+      {phase === 'tune' && selectedStroke && showAdvanced ? (
         <>
           <div className="role-row" role="group" aria-label="线条角色">
             <span className="role-title">当前线条：{roleLabel(selectedStroke.role)}</span>
@@ -772,7 +819,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
 
       <p className="editor-hint">
         {phase === 'draw'
-          ? `先自由画三笔（${strokes.length}/3）。画完后进入微调。`
+          ? completedFace
+            ? '已完成三笔。你可以直接保存，或进入微调继续细化。'
+            : `先自由画三笔（${strokes.length}/3）。画完后可直接完成，或进入微调。`
           : '点一下线条进入编辑态。拖动线条做“轻推局部”，5秒后会自动收起编辑标识。'}
       </p>
     </div>
