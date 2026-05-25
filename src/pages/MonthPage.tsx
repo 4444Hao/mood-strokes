@@ -14,7 +14,7 @@ type MonthPageProps = {
   onBackCurrentMonth: () => void
 }
 
-type MonthViewMode = 'grid' | 'hanger'
+type MonthViewMode = 'grid' | 'week' | 'hanger'
 
 const EMPTY_DAY_QUOTES = [
   '空白的一天。',
@@ -67,7 +67,12 @@ export function MonthPage({
   onNextMonth,
   onBackCurrentMonth,
 }: MonthPageProps) {
-  const [viewMode, setViewMode] = useState<MonthViewMode>('grid')
+  const [viewMode, setViewMode] = useState<MonthViewMode>(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return 'grid'
+    }
+    return window.matchMedia('(max-width: 680px)').matches ? 'week' : 'grid'
+  })
   const totalDays = daysInMonth(monthKey)
   const days = Array.from({ length: totalDays }, (_, i) => i + 1)
   const entryByDay = useMemo(() => {
@@ -96,6 +101,10 @@ export function MonthPage({
   const selectedDateLabel = `${monthLabel} ${selectedDay} 日`
   const selectedDateKey = dateKeyOf(monthKey, selectedDay)
   const emptyDayQuote = quoteForDate(selectedDateKey)
+  const selectedWeekStart = Math.floor((selectedDay - 1) / 7) * 7 + 1
+  const weekDays = Array.from({ length: 7 }, (_, i) => selectedWeekStart + i).filter((day) => day <= totalDays)
+  const canPrevWeek = selectedWeekStart > 1
+  const canNextWeek = selectedWeekStart + 7 <= totalDays
   const updatedAtLabel = selectedEntry
     ? new Date(selectedEntry.updatedAt).toLocaleString('zh-CN', {
         hour12: false,
@@ -124,6 +133,15 @@ export function MonthPage({
       <div className="month-view-toggle" role="tablist" aria-label="月历视图">
         <button
           type="button"
+          className={`ghost-btn ${viewMode === 'week' ? 'is-active' : ''}`}
+          onClick={() => setViewMode('week')}
+          role="tab"
+          aria-selected={viewMode === 'week'}
+        >
+          周视图
+        </button>
+        <button
+          type="button"
           className={`ghost-btn ${viewMode === 'grid' ? 'is-active' : ''}`}
           onClick={() => setViewMode('grid')}
           role="tab"
@@ -142,7 +160,86 @@ export function MonthPage({
         </button>
       </div>
 
-      {viewMode === 'grid' ? (
+      {viewMode === 'week' ? (
+        <>
+          <div className="week-toolbar">
+            <button
+              type="button"
+              className="ghost-btn"
+              disabled={!canPrevWeek}
+              onClick={() => setSelectedDay((day) => Math.max(1, day - 7))}
+            >
+              上一周
+            </button>
+            <p className="week-range">
+              {selectedWeekStart} - {Math.min(totalDays, selectedWeekStart + 6)} 日
+            </p>
+            <button
+              type="button"
+              className="ghost-btn"
+              disabled={!canNextWeek}
+              onClick={() => setSelectedDay((day) => Math.min(totalDays, day + 7))}
+            >
+              下一周
+            </button>
+          </div>
+
+          <div className="week-grid" aria-label="周视图表情墙">
+            {weekDays.map((day) => {
+              const entry = entryByDay.get(day)
+              return (
+                <article
+                  key={day}
+                  className={`week-day-card ${selectedDay === day ? 'is-selected' : ''} ${entry ? 'has-face' : 'is-empty'}`}
+                  onClick={() => setSelectedDay(day)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      setSelectedDay(day)
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${day}号${entry ? '有记录' : '无记录'}`}
+                >
+                  <span className="day-label">{day}</span>
+                  {entry ? (
+                    <span
+                      className={`sync-dot ${syncStatusClass(entry)}`}
+                      title={syncStatusLabel(entry)}
+                      aria-label={syncStatusLabel(entry)}
+                    />
+                  ) : null}
+                  {entry ? (
+                    <MoodFaceSvg face={entry.face} className="week-face-thumb" />
+                  ) : (
+                    <div className="face-dot" aria-hidden>
+                      ·
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+
+          <section className="month-detail">
+            <h3 className="month-detail-title">{selectedDateLabel}</h3>
+            {selectedEntry ? (
+              <div className="month-detail-body">
+                <MoodFaceSvg face={selectedEntry.face} className="month-face-large" />
+                <div className="month-detail-copy">
+                  <p className="month-detail-note">{selectedEntry.note || '今天没有留下备注。'}</p>
+                  <p className="month-detail-meta">最后更新：{updatedAtLabel}</p>
+                  <p className={`sync-pill ${syncStatusClass(selectedEntry)}`}>
+                    同步状态：{syncStatusLabel(selectedEntry)}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="empty-tip">{emptyDayQuote}</p>
+            )}
+          </section>
+        </>
+      ) : viewMode === 'grid' ? (
         <>
           <div className="calendar-grid" aria-label="月历表情墙">
             {days.map((day) => {
