@@ -9,6 +9,12 @@ import {
 import { getSupabaseClient, isSupabaseConfigured, MOOD_ENTRIES_TABLE, PROFILES_TABLE } from './supabase'
 
 const SYNC_META_KEY = 'three-line-mood.sync-meta.v1'
+const MAGIC_LINK_META_KEY = 'three-line-mood.magic-link-meta.v1'
+export const EMAIL_SIGNIN_COOLDOWN_SECONDS = 60
+
+type MagicLinkMeta = {
+  lastSentAt?: string
+}
 
 type CloudMoodRow = {
   user_id: string
@@ -103,6 +109,73 @@ function writeSyncMeta(meta: SyncMeta): void {
   window.localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta))
 }
 
+function readMagicLinkMeta(): MagicLinkMeta {
+  try {
+    const raw = window.localStorage.getItem(MAGIC_LINK_META_KEY)
+    if (!raw) {
+      return {}
+    }
+    const parsed = JSON.parse(raw) as MagicLinkMeta
+    return parsed ?? {}
+  } catch {
+    return {}
+  }
+}
+
+function writeMagicLinkMeta(meta: MagicLinkMeta): void {
+  window.localStorage.setItem(MAGIC_LINK_META_KEY, JSON.stringify(meta))
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function getRedirectTarget(): string {
+  const byEnv = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim()
+  if (byEnv) {
+    return byEnv
+  }
+  return window.location.origin
+}
+
+function getCooldownRemainingSeconds(): number {
+  const meta = readMagicLinkMeta()
+  if (!meta.lastSentAt) {
+    return 0
+  }
+  const lastSentAtMs = Date.parse(meta.lastSentAt)
+  if (Number.isNaN(lastSentAtMs)) {
+    return 0
+  }
+  const elapsedMs = Date.now() - lastSentAtMs
+  const remainMs = EMAIL_SIGNIN_COOLDOWN_SECONDS * 1000 - elapsedMs
+  if (remainMs <= 0) {
+    return 0
+  }
+  return Math.ceil(remainMs / 1000)
+}
+
+function mapSignInErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase()
+  if (lower.includes('for security purposes') || lower.includes('rate limit')) {
+    return '发送太频繁了，请稍等一分钟再试。'
+  }
+  if (lower.includes('email rate limit exceeded')) {
+    return '当前邮箱发送频率受限，请稍后再试。'
+  }
+  if (lower.includes('email provider is disabled')) {
+    return '邮箱登录当前未启用，请在 Supabase Authentication 中开启 Email Provider。'
+  }
+  if (lower.includes('invalid email')) {
+    return '邮箱格式不正确，请检查后再试。'
+  }
+  return raw
+}
+
 function setLastSync(mode: SyncMode): string {
   const syncedAt = new Date().toISOString()
   writeSyncMeta({
@@ -114,6 +187,14 @@ function setLastSync(mode: SyncMode): string {
 
 export function getSyncMeta(): SyncMeta {
   return readSyncMeta()
+}
+
+export function getAuthRedirectTarget(): string {
+  return getRedirectTarget()
+}
+
+export function getEmailSignInCooldownSeconds(): number {
+  return getCooldownRemainingSeconds()
 }
 
 function mergeByLatest(local: MoodEntry[], cloud: MoodEntry[]): MoodEntry[] {
@@ -219,19 +300,31 @@ export async function getAuthSummary(): Promise<AuthSummary> {
 
 export async function signInWithEmail(email: string): Promise<void> {
   ensureConfigured()
+  const normalized = normalizeEmail(email)
+  if (!isValidEmail(normalized)) {
+    throw new Error('请输入有效的邮箱地址。')
+  }
+  const cooldown = getCooldownRemainingSeconds()
+  if (cooldown > 0) {
+    throw new Error(`刚发送过登录链接，请 ${cooldown} 秒后再试。`)
+  }
   const client = getSupabaseClient()
   if (!client) {
     throw new Error('Supabase 客户端未初始化。')
   }
   const { error } = await client.auth.signInWithOtp({
-    email,
+    email: normalized,
     options: {
-      emailRedirectTo: window.location.origin,
+      emailRedirectTo: getRedirectTarget(),
+      shouldCreateUser: true,
     },
   })
   if (error) {
-    throw new Error(error.message)
+    throw new Error(mapSignInErrorMessage(error.message))
   }
+  writeMagicLinkMeta({
+    lastSentAt: new Date().toISOString(),
+  })
 }
 
 export async function signOutCloud(): Promise<void> {

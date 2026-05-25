@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "security:scan": "node scripts/security-scan.mjs",
     "test": "vitest",
     "test:run": "vitest run"
   },

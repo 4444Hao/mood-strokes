@@ -1,6 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
-import type { AuthSummary, SyncMeta, SyncMode, SyncSummary } from '../lib/cloudSync'
+import {
+  EMAIL_SIGNIN_COOLDOWN_SECONDS,
+  getAuthRedirectTarget,
+  getEmailSignInCooldownSeconds,
+  type AuthSummary,
+  type SyncMeta,
+  type SyncMode,
+  type SyncSummary,
+} from '../lib/cloudSync'
 import type { StorageStats } from '../lib/storage'
 import type { MoodSubmission } from '../types/curation'
 
@@ -85,9 +93,19 @@ export function SettingsPage({
     'signin' | 'sync' | 'signout' | 'refresh' | 'install' | 'withdraw' | 'review' | null
   >(null)
   const [hint, setHint] = useState('')
+  const [emailCooldown, setEmailCooldown] = useState(0)
   const syncMetaText = syncMeta.lastSyncedAt
     ? `最近同步：${new Date(syncMeta.lastSyncedAt).toLocaleString('zh-CN', { hour12: false })}（${syncMeta.lastMode === 'merge' ? '安全合并' : syncMeta.lastMode === 'push_local' ? '本地覆盖云端' : '云端覆盖本地'}）`
     : '最近同步：尚无记录'
+  const redirectTarget = getAuthRedirectTarget()
+
+  useEffect(() => {
+    setEmailCooldown(getEmailSignInCooldownSeconds())
+    const timer = window.setInterval(() => {
+      setEmailCooldown(getEmailSignInCooldownSeconds())
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const handleExport = () => {
     onExport()
@@ -117,13 +135,22 @@ export function SettingsPage({
       setHint('请输入用于登录的邮箱地址。')
       return
     }
+    if (emailCooldown > 0) {
+      setHint(`刚发送过登录链接，请 ${emailCooldown} 秒后再试。`)
+      return
+    }
     try {
       setBusyAction('signin')
       await onSignIn(clean)
-      setHint('登录链接已发送到邮箱，请点击邮件中的链接完成登录。')
+      setEmailCooldown(EMAIL_SIGNIN_COOLDOWN_SECONDS)
+      setHint(
+        `登录链接已发送。请检查收件箱和垃圾箱，并在本设备中打开邮件里的链接完成登录（回跳地址：${redirectTarget}）。`,
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : '登录请求失败。'
-      setHint(message)
+      setHint(
+        `${message} 若一直收不到邮件，请确认 Supabase URL Configuration 已包含当前站点域名，并稍后重试。`,
+      )
     } finally {
       setBusyAction(null)
     }
@@ -290,9 +317,9 @@ export function SettingsPage({
                   type="button"
                   className="ghost-btn"
                   onClick={handleSignIn}
-                  disabled={busyAction !== null}
+                  disabled={busyAction !== null || emailCooldown > 0}
                 >
-                  发送登录链接
+                  {emailCooldown > 0 ? `稍后重试（${emailCooldown}s）` : '发送登录链接'}
                 </button>
               </div>
             ) : (
@@ -348,6 +375,12 @@ export function SettingsPage({
         <p className="settings-note">
           冲突策略说明：默认使用“安全合并”，按更新时间保留最新记录；覆盖模式会替换另一端数据。
         </p>
+        {!auth.signedIn ? (
+          <p className="settings-note">
+            登录排查：回跳地址当前为 {redirectTarget}。请在 Supabase 的 Authentication URL Configuration
+            中设置 Site URL 与 Redirect URLs 覆盖该地址。
+          </p>
+        ) : null}
       </div>
 
       {auth.signedIn ? (

@@ -67,6 +67,7 @@ Windows PowerShell 可手动创建 `.env`，并填入：
 ```bash
 VITE_SUPABASE_URL=你的项目URL
 VITE_SUPABASE_ANON_KEY=你的匿名公钥
+VITE_AUTH_REDIRECT_URL=https://你的线上域名
 ```
 
 2. 在 Supabase SQL Editor 执行建表脚本：
@@ -122,6 +123,25 @@ src/
 - 连续打卡压力机制
 - 复杂统计图
 - 强制登录
+
+## 仓库安全（建议每次提交前执行）
+
+1. 本地密钥文件不要入库：
+
+- 使用 `.env` / `.env.local` 保存真实密钥
+- 仅提交 `.env.example` 模板文件
+
+2. 提交前运行敏感信息扫描：
+
+```bash
+npm run security:scan
+```
+
+3. 如果误提交过密钥，先移除追踪并旋转密钥：
+
+```bash
+git rm --cached .env
+```
 
 ## 下一步建议
 
