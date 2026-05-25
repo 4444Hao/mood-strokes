@@ -130,10 +130,6 @@
   gap: 0.55rem;
 }
 
-.week-grid-mobile {
-  display: none;
-}
-
 .week-day-card {
   position: relative;
   min-height: 106px;
@@ -902,11 +898,7 @@ textarea:disabled {
     font-size: 0.84rem;
   }
 
-  .week-grid-desktop {
-    display: none;
-  }
-
-  .week-grid-mobile {
+  .week-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.55rem;
@@ -919,19 +911,19 @@ textarea:disabled {
     padding: 0.42rem 0.36rem;
   }
 
-  .week-grid-mobile .week-day-card-mobile:nth-child(n + 5) {
+  .week-grid .week-day-card-mobile:nth-child(n + 5) {
     grid-column: span 1;
   }
 
-  .week-grid-mobile .week-day-card-mobile:nth-child(5) {
+  .week-grid .week-day-card-mobile:nth-child(5) {
     grid-column: 1 / 2;
   }
 
-  .week-grid-mobile .week-day-card-mobile:nth-child(6) {
+  .week-grid .week-day-card-mobile:nth-child(6) {
     grid-column: 2 / 3;
   }
 
-  .week-grid-mobile .week-day-card-mobile:nth-child(7) {
+  .week-grid .week-day-card-mobile:nth-child(7) {
     grid-column: 3 / 4;
   }
 

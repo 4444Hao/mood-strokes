@@ -67,15 +67,7 @@ export function MonthPage({
   onNextMonth,
   onBackCurrentMonth,
 }: MonthPageProps) {
-  const [viewMode, setViewMode] = useState<MonthViewMode>(() => {
-    return 'week'
-  })
-  const [isMobileWeekLayout, setIsMobileWeekLayout] = useState<boolean>(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return false
-    }
-    return window.matchMedia('(max-width: 680px)').matches
-  })
+  const [viewMode, setViewMode] = useState<MonthViewMode>('week')
   const totalDays = daysInMonth(monthKey)
   const entryByDay = useMemo(() => {
     const map = new Map<number, MoodEntry>()
@@ -98,21 +90,6 @@ export function MonthPage({
     }, 1)
     setSelectedDay(latest)
   }, [entries, monthKey])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return
-    }
-    const media = window.matchMedia('(max-width: 680px)')
-    const update = () => setIsMobileWeekLayout(media.matches)
-    update()
-    if (typeof media.addEventListener === 'function') {
-      media.addEventListener('change', update)
-      return () => media.removeEventListener('change', update)
-    }
-    media.addListener(update)
-    return () => media.removeListener(update)
-  }, [])
 
   const selectedEntry = entryByDay.get(selectedDay)
   const selectedDateLabel = `${monthLabel} ${selectedDay} 日`
@@ -227,15 +204,9 @@ export function MonthPage({
             </button>
           </div>
 
-          {isMobileWeekLayout ? (
-            <div className="week-grid week-grid-mobile" aria-label="周视图表情墙">
-              {weekDays.map((day) => renderWeekDayCard(day, 'week-day-card-mobile'))}
-            </div>
-          ) : (
-            <div className="week-grid week-grid-desktop" aria-label="周视图表情墙">
-              {weekDays.map((day) => renderWeekDayCard(day))}
-            </div>
-          )}
+          <div className="week-grid" aria-label="周视图表情墙">
+            {weekDays.map((day) => renderWeekDayCard(day, 'week-day-card-mobile'))}
+          </div>
 
           <section className="month-detail">
             <h3 className="month-detail-title">{selectedDateLabel}</h3>
