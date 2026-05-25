@@ -105,6 +105,12 @@
   gap: 0.55rem;
 }
 
+.month-view-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .block {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -538,6 +544,44 @@
   border-radius: 16px;
   padding: 0.9rem;
   background: rgba(255, 251, 244, 0.7);
+}
+
+.month-hanger {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(255, 251, 244, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.month-hanger-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.month-hanger-date {
+  margin: 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.month-hanger-sheet {
+  border: 1px solid rgba(126, 96, 69, 0.24);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.26)),
+    rgba(255, 249, 241, 0.78);
+  padding: 0.8rem;
+}
+
+.month-hanger-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .month-detail-title {
