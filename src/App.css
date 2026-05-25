@@ -134,16 +134,6 @@
   display: none;
 }
 
-.week-carousel {
-  display: none;
-}
-
-.week-page {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
 .week-day-card {
   position: relative;
   min-height: 106px;
@@ -917,37 +907,36 @@ textarea:disabled {
   }
 
   .week-grid-mobile {
-    display: block;
-  }
-
-  .week-carousel {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 100%;
-    overflow-x: auto;
-    gap: 0.65rem;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    padding-bottom: 0.2rem;
-  }
-
-  .week-carousel::-webkit-scrollbar {
-    display: none;
-  }
-
-  .week-page {
-    scroll-snap-align: start;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
   }
 
   .week-day-card-mobile {
-    min-height: 136px;
-    border-radius: 18px;
-    padding: 0.52rem 0.46rem;
+    min-height: unset;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    padding: 0.42rem 0.36rem;
+  }
+
+  .week-grid-mobile .week-day-card-mobile:nth-child(n + 5) {
+    grid-column: span 1;
+  }
+
+  .week-grid-mobile .week-day-card-mobile:nth-child(5) {
+    grid-column: 1 / 2;
+  }
+
+  .week-grid-mobile .week-day-card-mobile:nth-child(6) {
+    grid-column: 2 / 3;
+  }
+
+  .week-grid-mobile .week-day-card-mobile:nth-child(7) {
+    grid-column: 3 / 4;
   }
 
   .week-face-thumb {
-    max-width: 84px;
+    max-width: 72px;
   }
 
   .day-card {
