@@ -81,10 +81,13 @@ export function TodayPage({
   const [note, setNote] = useState('')
   const [face, setFace] = useState<MoodFace | undefined>(undefined)
   const [savedHint, setSavedHint] = useState('')
+  const [saveBusy, setSaveBusy] = useState(false)
+  const [saveDone, setSaveDone] = useState(false)
   const [consentPublic, setConsentPublic] = useState(false)
   const [consentTemplate, setConsentTemplate] = useState(false)
   const [shareCaption, setShareCaption] = useState('')
   const [submitBusy, setSubmitBusy] = useState(false)
+  const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
   const notePrompt = promptForDate(dateKey)
 
@@ -92,14 +95,26 @@ export function TodayPage({
     setNote(entry?.note ?? '')
     setFace(entry?.face)
     setSavedHint('')
+    setSaveBusy(false)
+    setSaveDone(false)
+    setSubmitDone(false)
   }, [entry?.id, entry?.note, entry?.face])
 
   const handleSave = () => {
-    if (!face) {
+    if (!face || saveBusy) {
       return
     }
-    onSave(note, face)
-    setSavedHint('今天的脸已经收好了。')
+    setSaveBusy(true)
+    setSaveDone(false)
+    setSavedHint('')
+    try {
+      onSave(note, face)
+      setSavedHint('今天的脸已经收好了。')
+      setSaveDone(true)
+      window.setTimeout(() => setSaveDone(false), 1400)
+    } finally {
+      window.setTimeout(() => setSaveBusy(false), 260)
+    }
   }
 
   const handleSubmit = async () => {
@@ -122,6 +137,8 @@ export function TodayPage({
 
     try {
       setSubmitBusy(true)
+      setSubmitDone(false)
+      setSubmitHint('上传中...')
       await onSubmitMood({
         entryDate: dateKey,
         face,
@@ -131,6 +148,8 @@ export function TodayPage({
         consentTemplate,
       })
       setSubmitHint('投稿已提交。你可以在设置页查看审核状态。')
+      setSubmitDone(true)
+      window.setTimeout(() => setSubmitDone(false), 1600)
     } catch (error) {
       const message = error instanceof Error ? error.message : '投稿失败，请稍后再试。'
       setSubmitHint(message)
@@ -195,8 +214,22 @@ export function TodayPage({
         />
       </label>
 
-      <button type="button" className="primary-btn" onClick={handleSave} disabled={!face}>
-        保存今天的脸
+      <button
+        type="button"
+        className={`primary-btn ${saveBusy ? 'is-loading' : ''} ${saveDone ? 'is-success' : ''}`}
+        onClick={handleSave}
+        disabled={!face || saveBusy}
+      >
+        {saveBusy ? (
+          <>
+            <span className="btn-spinner" aria-hidden />
+            保存中...
+          </>
+        ) : saveDone ? (
+          '已保存'
+        ) : (
+          '保存今天的脸'
+        )}
       </button>
 
       <div className="block" aria-label="投稿到精选池">
@@ -227,8 +260,22 @@ export function TodayPage({
           onChange={(event) => setShareCaption(event.target.value)}
         />
         <div className="settings-actions">
-          <button type="button" className="ghost-btn" onClick={() => void handleSubmit()} disabled={submitBusy}>
-            上传到精选池
+          <button
+            type="button"
+            className={`ghost-btn ${submitBusy ? 'is-loading' : ''} ${submitDone ? 'is-success' : ''}`}
+            onClick={() => void handleSubmit()}
+            disabled={submitBusy}
+          >
+            {submitBusy ? (
+              <>
+                <span className="btn-spinner" aria-hidden />
+                上传中...
+              </>
+            ) : submitDone ? (
+              '已提交审核'
+            ) : (
+              '上传到精选池'
+            )}
           </button>
         </div>
         {submitHint ? <p className="editor-hint">{submitHint}</p> : null}

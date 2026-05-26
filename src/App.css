@@ -63,6 +63,15 @@
   transition: all 220ms ease;
 }
 
+.primary-btn,
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.2rem;
+}
+
 .tab-chip {
   padding: 0.45rem 0.95rem;
   font-size: 0.95rem;
@@ -843,9 +852,50 @@
   padding: 0.48rem 0.95rem;
 }
 
+.primary-btn:hover,
+.ghost-btn:hover,
+.mini-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(86, 61, 39, 0.08);
+}
+
+.primary-btn:active,
+.ghost-btn:active,
+.mini-chip:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 5px rgba(86, 61, 39, 0.1);
+}
+
+.primary-btn:focus-visible,
+.ghost-btn:focus-visible,
+.mini-chip:focus-visible {
+  outline: 2px solid rgba(147, 111, 74, 0.85);
+  outline-offset: 2px;
+}
+
 .ghost-btn.is-active {
   background: rgba(173, 205, 145, 0.28);
   border-color: rgba(107, 152, 89, 0.55);
+}
+
+.primary-btn.is-success,
+.ghost-btn.is-success {
+  background: rgba(173, 205, 145, 0.34);
+  border-color: rgba(107, 152, 89, 0.62);
+}
+
+.primary-btn.is-loading,
+.ghost-btn.is-loading {
+  opacity: 0.92;
+}
+
+.btn-spinner {
+  width: 0.92rem;
+  height: 0.92rem;
+  border: 2px solid rgba(83, 61, 40, 0.26);
+  border-top-color: rgba(83, 61, 40, 0.9);
+  border-radius: 50%;
+  animation: spin 620ms linear infinite;
 }
 
 .ghost-btn.warn {
@@ -867,6 +917,12 @@ textarea:disabled {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -191,6 +191,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const [dragState, setDragState] = useState<DragState>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [tuneDone, setTuneDone] = useState(false)
   const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastExternalRef = useRef<MoodFace | undefined>(undefined)
 
@@ -364,6 +365,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     setDragState(null)
     setShowAdvanced(false)
     setIsEditing(false)
+    setTuneDone(false)
     onChange(undefined)
   }
 
@@ -405,6 +407,8 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const completeTune = () => {
     setIsEditing(false)
     setDragState(null)
+    setTuneDone(true)
+    window.setTimeout(() => setTuneDone(false), 1400)
   }
 
   const startNudge = (
@@ -725,8 +729,12 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
             <button type="button" className="ghost-btn" onClick={backToDraw}>
               返回重画
             </button>
-            <button type="button" className="ghost-btn" onClick={completeTune}>
-              完成微调
+            <button
+              type="button"
+              className={`ghost-btn ${tuneDone ? 'is-success' : ''}`}
+              onClick={completeTune}
+            >
+              {tuneDone ? '已完成微调' : '完成微调'}
             </button>
             <button type="button" className="ghost-btn warn" onClick={clearAll}>
               清空重来
