@@ -18,6 +18,7 @@ export type MoodSubmission = {
   shareCaption?: string
   consentPublic: boolean
   consentTemplate: boolean
+  isAnonymous: boolean
   status: SubmissionStatus
   reviewComment?: string
   reviewedBy?: string
@@ -30,6 +31,9 @@ export type FeaturedTemplate = {
   id: string
   sourceSubmissionId?: string
   createdBy: string
+  authorUserId?: string
+  authorName?: string
+  isAnonymous?: boolean
   title: string
   description?: string
   face: MoodFace
@@ -45,4 +49,5 @@ export type SubmitMoodPayload = {
   shareCaption?: string
   consentPublic: boolean
   consentTemplate: boolean
+  isAnonymous: boolean
 }

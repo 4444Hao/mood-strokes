@@ -56,11 +56,12 @@ describe('TodayPage', () => {
       target: { value: '今天慢慢来' },
     })
     fireEvent.click(screen.getByRole('button', { name: '保存今天的脸' }))
+    fireEvent.click(screen.getByRole('button', { name: '覆盖保存' }))
 
     expect(onSave).toHaveBeenCalledTimes(1)
     const [note, savedFace] = onSave.mock.calls[0]
     expect(note).toBe('今天慢慢来')
     expect(savedFace.mode).toBe('expressive')
-    expect(screen.getByText('今天的脸已经收好了。')).toBeInTheDocument()
+    expect(screen.getByText('已覆盖今天这张。')).toBeInTheDocument()
   })
 })

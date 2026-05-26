@@ -23,6 +23,7 @@ type SubmissionRow = {
   share_caption: string | null
   consent_public: boolean
   consent_template: boolean
+  is_anonymous?: boolean
   status: SubmissionStatus
   review_comment: string | null
   reviewed_by: string | null
@@ -39,8 +40,20 @@ type FeaturedTemplateRow = {
   description: string | null
   face: MoodFace
   note: string | null
+  is_anonymous?: boolean | null
   is_active: boolean
   created_at: string
+}
+
+type SubmissionAuthorRow = {
+  id: string
+  user_id: string
+  is_anonymous?: boolean
+}
+
+type ProfileNameRow = {
+  user_id: string
+  display_name: string | null
 }
 
 export type CurationAuthSummary = {
@@ -85,6 +98,7 @@ function fromSubmissionRow(row: SubmissionRow): MoodSubmission {
     shareCaption: row.share_caption ?? undefined,
     consentPublic: row.consent_public,
     consentTemplate: row.consent_template,
+    isAnonymous: Boolean(row.is_anonymous),
     status: row.status,
     reviewComment: row.review_comment ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
@@ -94,11 +108,17 @@ function fromSubmissionRow(row: SubmissionRow): MoodSubmission {
   }
 }
 
-function fromTemplateRow(row: FeaturedTemplateRow): FeaturedTemplate {
+function fromTemplateRow(
+  row: FeaturedTemplateRow,
+  options?: { authorUserId?: string; authorName?: string; isAnonymous?: boolean },
+): FeaturedTemplate {
   return {
     id: row.id,
     sourceSubmissionId: row.source_submission_id ?? undefined,
     createdBy: row.created_by,
+    authorUserId: options?.authorUserId,
+    authorName: options?.authorName,
+    isAnonymous: options?.isAnonymous ?? Boolean(row.is_anonymous),
     title: row.title,
     description: row.description ?? undefined,
     face: row.face,
@@ -144,18 +164,89 @@ export async function listFeaturedTemplates(limit = 12): Promise<FeaturedTemplat
     throw new Error('Supabase 客户端未初始化。')
   }
 
-  const { data, error } = await client
-    .from(FEATURED_TEMPLATES_TABLE)
-    .select('id,source_submission_id,created_by,title,description,face,note,is_active,created_at')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-
-  if (error) {
-    throw new Error(error.message)
+  let rows: FeaturedTemplateRow[] = []
+  {
+    const withAnonymous = await client
+      .from(FEATURED_TEMPLATES_TABLE)
+      .select('id,source_submission_id,created_by,title,description,face,note,is_anonymous,is_active,created_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (withAnonymous.error && withAnonymous.error.message.includes('is_anonymous')) {
+      const fallback = await client
+        .from(FEATURED_TEMPLATES_TABLE)
+        .select('id,source_submission_id,created_by,title,description,face,note,is_active,created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (fallback.error) {
+        throw new Error(fallback.error.message)
+      }
+      rows = (fallback.data ?? []) as FeaturedTemplateRow[]
+    } else if (withAnonymous.error) {
+      throw new Error(withAnonymous.error.message)
+    } else {
+      rows = (withAnonymous.data ?? []) as FeaturedTemplateRow[]
+    }
   }
 
-  return ((data ?? []) as FeaturedTemplateRow[]).map(fromTemplateRow)
+  if (rows.length === 0) {
+    return []
+  }
+
+  const sourceIds = rows
+    .map((row) => row.source_submission_id)
+    .filter((id): id is string => Boolean(id))
+  if (sourceIds.length === 0) {
+    return rows.map((row) => fromTemplateRow(row))
+  }
+
+  const authorBySource = new Map<string, string>()
+  const anonymousBySource = new Map<string, boolean>()
+  {
+    const withAnonymous = await client
+      .from(MOOD_SUBMISSIONS_TABLE)
+      .select('id,user_id,is_anonymous')
+      .in('id', sourceIds)
+    if (withAnonymous.error && withAnonymous.error.message.includes('is_anonymous')) {
+      const fallback = await client
+        .from(MOOD_SUBMISSIONS_TABLE)
+        .select('id,user_id')
+        .in('id', sourceIds)
+      if (!fallback.error) {
+        ;((fallback.data ?? []) as SubmissionAuthorRow[]).forEach((row) => {
+          authorBySource.set(row.id, row.user_id)
+        })
+      }
+    } else if (!withAnonymous.error) {
+      ;((withAnonymous.data ?? []) as SubmissionAuthorRow[]).forEach((row) => {
+        authorBySource.set(row.id, row.user_id)
+        anonymousBySource.set(row.id, Boolean(row.is_anonymous))
+      })
+    }
+  }
+
+  const authorIds = Array.from(new Set(Array.from(authorBySource.values())))
+  const nameByUser = new Map<string, string>()
+  if (authorIds.length > 0) {
+    const { data: profileRows } = await client
+      .from(PROFILES_TABLE)
+      .select('user_id,display_name')
+      .in('user_id', authorIds)
+    ;((profileRows ?? []) as ProfileNameRow[]).forEach((row) => {
+      if (row.display_name && row.display_name.trim()) {
+        nameByUser.set(row.user_id, row.display_name.trim())
+      }
+    })
+  }
+
+  return rows.map((row) => {
+    const sourceId = row.source_submission_id ?? ''
+    const authorUserId = authorBySource.get(sourceId)
+    const authorName = authorUserId ? nameByUser.get(authorUserId) : undefined
+    const isAnonymous = anonymousBySource.get(sourceId) ?? Boolean(row.is_anonymous)
+    return fromTemplateRow(row, { authorUserId, authorName, isAnonymous })
+  })
 }
 
 export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodSubmission> {
@@ -169,7 +260,7 @@ export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodS
     throw new Error('投稿前请先确认公开展示与模板授权。')
   }
 
-  const row = {
+  const row: Record<string, unknown> = {
     user_id: user.id,
     entry_date: payload.entryDate,
     face: payload.face,
@@ -182,6 +273,9 @@ export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodS
     reviewed_by: null,
     reviewed_at: null,
   }
+  if (payload.isAnonymous) {
+    row.is_anonymous = true
+  }
 
   const { data, error } = await client
     .from(MOOD_SUBMISSIONS_TABLE)
@@ -190,10 +284,16 @@ export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodS
     .single()
 
   if (error) {
+    if (error.message.includes('is_anonymous')) {
+      throw new Error('数据库尚未启用匿名投稿字段。请先执行迁移 SQL 后重试。')
+    }
     throw new Error(error.message)
   }
 
-  return fromSubmissionRow(data as SubmissionRow)
+  return {
+    ...fromSubmissionRow(data as SubmissionRow),
+    isAnonymous: payload.isAnonymous,
+  }
 }
 
 export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
@@ -205,7 +305,7 @@ export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
 
   const { data, error } = await client
     .from(MOOD_SUBMISSIONS_TABLE)
-    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,is_anonymous,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -268,7 +368,7 @@ export async function listReviewQueue(limit = 60): Promise<MoodSubmission[]> {
 
   const { data, error } = await client
     .from(MOOD_SUBMISSIONS_TABLE)
-    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,is_anonymous,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
     .in('status', ['uploaded', 'approved', 'rejected', 'featured'])
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -339,7 +439,7 @@ export async function featureSubmission(params: {
 
   const { data: submission, error: fetchError } = await client
     .from(MOOD_SUBMISSIONS_TABLE)
-    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,is_anonymous,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
     .eq('id', params.submissionId)
     .single()
 
@@ -361,6 +461,7 @@ export async function featureSubmission(params: {
       description: params.description?.trim() || null,
       face: row.face,
       note: row.note,
+      is_anonymous: Boolean(row.is_anonymous),
       is_active: true,
     })
 

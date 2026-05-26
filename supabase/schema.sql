@@ -118,6 +118,9 @@ create table if not exists public.mood_submissions (
   updated_at timestamptz not null default now()
 );
 
+alter table public.mood_submissions
+add column if not exists is_anonymous boolean not null default false;
+
 create index if not exists mood_submissions_user_idx on public.mood_submissions(user_id, created_at desc);
 create index if not exists mood_submissions_status_idx on public.mood_submissions(status, created_at desc);
 
@@ -160,6 +163,9 @@ create table if not exists public.featured_templates (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.featured_templates
+add column if not exists is_anonymous boolean not null default false;
 
 create index if not exists featured_templates_active_idx on public.featured_templates(is_active, created_at desc);
 

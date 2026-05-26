@@ -85,10 +85,12 @@ export function TodayPage({
   const [saveDone, setSaveDone] = useState(false)
   const [consentPublic, setConsentPublic] = useState(false)
   const [consentTemplate, setConsentTemplate] = useState(false)
+  const [isAnonymous, setIsAnonymous] = useState(false)
   const [shareCaption, setShareCaption] = useState('')
   const [submitBusy, setSubmitBusy] = useState(false)
   const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
+  const [overwriteConfirmOpen, setOverwriteConfirmOpen] = useState(false)
   const notePrompt = promptForDate(dateKey)
 
   useEffect(() => {
@@ -98,9 +100,10 @@ export function TodayPage({
     setSaveBusy(false)
     setSaveDone(false)
     setSubmitDone(false)
+    setOverwriteConfirmOpen(false)
   }, [entry?.id, entry?.note, entry?.face])
 
-  const handleSave = () => {
+  const executeSave = () => {
     if (!face || saveBusy) {
       return
     }
@@ -109,12 +112,24 @@ export function TodayPage({
     setSavedHint('')
     try {
       onSave(note, face)
-      setSavedHint('今天的脸已经收好了。')
+      setSavedHint(entry ? '已覆盖今天这张。' : '今天的脸已经收好了。')
       setSaveDone(true)
       window.setTimeout(() => setSaveDone(false), 1400)
     } finally {
       window.setTimeout(() => setSaveBusy(false), 260)
+      setOverwriteConfirmOpen(false)
     }
+  }
+
+  const handleSave = () => {
+    if (!face || saveBusy) {
+      return
+    }
+    if (entry) {
+      setOverwriteConfirmOpen(true)
+      return
+    }
+    executeSave()
   }
 
   const handleSubmit = async () => {
@@ -146,6 +161,7 @@ export function TodayPage({
         shareCaption,
         consentPublic,
         consentTemplate,
+        isAnonymous,
       })
       setSubmitHint('投稿已提交。你可以在设置页查看审核状态。')
       setSubmitDone(true)
@@ -231,6 +247,20 @@ export function TodayPage({
           '保存今天的脸'
         )}
       </button>
+      {overwriteConfirmOpen ? (
+        <div className="block save-choice-card" role="group" aria-label="覆盖确认">
+          <p className="block-title">今天已经有一张表情</p>
+          <p className="block-note">再保存会覆盖今天这张，是否继续？</p>
+          <div className="settings-actions">
+            <button type="button" className="ghost-btn" onClick={executeSave}>
+              覆盖保存
+            </button>
+            <button type="button" className="ghost-btn warn" onClick={() => setOverwriteConfirmOpen(false)}>
+              取消
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="block" aria-label="投稿到精选池">
         <p className="block-title">投稿到精选池（可选）</p>
@@ -250,6 +280,14 @@ export function TodayPage({
             onChange={(event) => setConsentTemplate(event.target.checked)}
           />
           <span>我同意在入选后作为可选模板使用。</span>
+        </label>
+        <label className="consent-row">
+          <input
+            type="checkbox"
+            checked={isAnonymous}
+            onChange={(event) => setIsAnonymous(event.target.checked)}
+          />
+          <span>匿名展示（隐藏作者名）。</span>
         </label>
         <input
           className="settings-input"

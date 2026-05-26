@@ -39,12 +39,13 @@ import {
   type StorageStats,
 } from './lib/storage'
 import { MonthPage } from './pages/MonthPage'
+import { FeaturedPage } from './pages/FeaturedPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import type { MoodEntry, MoodFace } from './types/mood'
 import type { FeaturedTemplate, MoodSubmission, SubmitMoodPayload } from './types/curation'
 
-type PageId = 'today' | 'month' | 'settings'
+type PageId = 'today' | 'month' | 'featured' | 'settings'
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
@@ -58,6 +59,7 @@ type PageTab = {
 const PAGE_TABS: PageTab[] = [
   { id: 'today', label: '今日' },
   { id: 'month', label: '月历' },
+  { id: 'featured', label: '精选' },
   { id: 'settings', label: '设置' },
 ]
 
@@ -349,6 +351,9 @@ function App() {
           onFeatureSubmission={handleFeatureSubmission}
         />
       )
+    }
+    if (activePage === 'featured') {
+      return <FeaturedPage templates={featuredTemplates} />
     }
     return (
       <TodayPage
