@@ -250,7 +250,7 @@ export async function listFeaturedTemplates(limit = 12): Promise<FeaturedTemplat
 }
 
 export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodSubmission> {
-  const user = await requireSessionUser()
+  await requireSessionUser()
   const client = getSupabaseClient()
   if (!client) {
     throw new Error('Supabase 客户端未初始化。')
@@ -260,40 +260,33 @@ export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodS
     throw new Error('投稿前请先确认公开展示与模板授权。')
   }
 
-  const row: Record<string, unknown> = {
-    user_id: user.id,
-    entry_date: payload.entryDate,
-    face: payload.face,
-    note: payload.note?.trim() || null,
-    share_caption: payload.shareCaption?.trim() || null,
-    consent_public: payload.consentPublic,
-    consent_template: payload.consentTemplate,
-    status: 'uploaded' as const,
-    review_comment: null,
-    reviewed_by: null,
-    reviewed_at: null,
-  }
-  if (payload.isAnonymous) {
-    row.is_anonymous = true
-  }
-
   const { data, error } = await client
-    .from(MOOD_SUBMISSIONS_TABLE)
-    .insert(row)
-    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
+    .rpc('submit_mood_submission', {
+      p_entry_date: payload.entryDate,
+      p_face: payload.face,
+      p_note: payload.note?.trim() || null,
+      p_share_caption: payload.shareCaption?.trim() || null,
+      p_consent_public: payload.consentPublic,
+      p_consent_template: payload.consentTemplate,
+      p_is_anonymous: payload.isAnonymous,
+    })
     .single()
 
   if (error) {
+    const message = error.message.toLowerCase()
+    if (message.includes('submit_mood_submission')) {
+      throw new Error('数据库尚未启用投稿限流函数。请先执行最新的 Supabase 迁移 SQL。')
+    }
+    if (message.includes('你本小时投稿次数已达上限')) {
+      throw new Error('你本小时投稿次数已达上限（10次），请稍后再试。')
+    }
     if (error.message.includes('is_anonymous')) {
       throw new Error('数据库尚未启用匿名投稿字段。请先执行迁移 SQL 后重试。')
     }
     throw new Error(error.message)
   }
 
-  return {
-    ...fromSubmissionRow(data as SubmissionRow),
-    isAnonymous: payload.isAnonymous,
-  }
+  return fromSubmissionRow(data as SubmissionRow)
 }
 
 export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
@@ -318,19 +311,21 @@ export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
 }
 
 export async function withdrawSubmission(submissionId: string): Promise<void> {
-  const user = await requireSessionUser()
+  await requireSessionUser()
   const client = getSupabaseClient()
   if (!client) {
     throw new Error('Supabase 客户端未初始化。')
   }
 
-  const { error } = await client
-    .from(MOOD_SUBMISSIONS_TABLE)
-    .delete()
-    .eq('id', submissionId)
-    .eq('user_id', user.id)
+  const { error } = await client.rpc('withdraw_submission', {
+    p_submission_id: submissionId,
+  })
 
   if (error) {
+    const message = error.message.toLowerCase()
+    if (message.includes('withdraw_submission')) {
+      throw new Error('数据库尚未启用撤回联动函数。请先执行最新的 Supabase 迁移 SQL。')
+    }
     throw new Error(error.message)
   }
 }

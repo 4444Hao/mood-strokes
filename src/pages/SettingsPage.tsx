@@ -401,10 +401,10 @@ export function SettingsPage({
                       <button
                         type="button"
                         className="ghost-btn warn"
-                        disabled={busyAction !== null}
+                        disabled={busyAction !== null || submission.status === 'withdrawn'}
                         onClick={() => void handleWithdraw(submission.id)}
                       >
-                        撤回投稿
+                        {submission.status === 'withdrawn' ? '已撤回' : '撤回投稿'}
                       </button>
                     </div>
                   </div>
@@ -499,6 +499,21 @@ export function SettingsPage({
           <li key={item}>{item}</li>
         ))}
       </ul>
+
+      <div className="settings-install" aria-label="隐私与授权说明">
+        <p className="settings-stats-title">隐私与授权说明</p>
+        <p className="settings-note">
+          登录与投稿前，请先阅读隐私政策与投稿授权说明。匿名投稿仅对前台展示匿名，平台管理员仍可看到账号标识用于审核与风控。
+        </p>
+        <div className="settings-actions">
+          <a className="ghost-btn" href="/privacy.html" target="_blank" rel="noreferrer">
+            隐私政策
+          </a>
+          <a className="ghost-btn" href="/submission-license.html" target="_blank" rel="noreferrer">
+            投稿授权说明
+          </a>
+        </div>
+      </div>
 
       <div className="settings-actions">
         <button type="button" className="ghost-btn" onClick={handleExport}>

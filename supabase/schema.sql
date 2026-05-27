@@ -136,6 +136,8 @@ on public.mood_submissions
 for insert
 with check (
   auth.uid() = user_id
+  and consent_public = true
+  and consent_template = true
   and status = 'uploaded'
   and reviewed_by is null
   and reviewed_at is null
@@ -181,3 +183,207 @@ on public.featured_templates
 for all
 using (public.is_admin())
 with check (public.is_admin());
+
+create or replace function public.enforce_submission_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_count integer;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception '当前未登录，请先登录后再投稿。';
+  end if;
+
+  if new.user_id is distinct from v_user_id then
+    raise exception '投稿用户标识不匹配。';
+  end if;
+
+  if new.consent_public is distinct from true or new.consent_template is distinct from true then
+    raise exception '投稿前请先确认公开展示与模板授权。';
+  end if;
+
+  if new.status is distinct from 'uploaded' then
+    raise exception '投稿状态不合法。';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext(v_user_id::text));
+
+  select count(*) into v_count
+  from public.mood_submissions ms
+  where ms.user_id = v_user_id
+    and ms.created_at >= now() - interval '1 hour';
+
+  if v_count >= 10 then
+    raise exception '你本小时投稿次数已达上限（10次），请稍后再试。';
+  end if;
+
+  new.reviewed_by := null;
+  new.reviewed_at := null;
+  new.review_comment := null;
+  new.updated_at := coalesce(new.updated_at, now());
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_submission_insert on public.mood_submissions;
+create trigger trg_enforce_submission_insert
+before insert on public.mood_submissions
+for each row execute procedure public.enforce_submission_insert();
+
+create or replace function public.prevent_submission_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  raise exception '不支持直接删除投稿，请使用撤回操作。';
+end;
+$$;
+
+drop trigger if exists trg_prevent_submission_delete on public.mood_submissions;
+create trigger trg_prevent_submission_delete
+before delete on public.mood_submissions
+for each row execute procedure public.prevent_submission_delete();
+
+create or replace function public.submit_mood_submission(
+  p_entry_date text,
+  p_face jsonb,
+  p_note text default null,
+  p_share_caption text default null,
+  p_consent_public boolean default false,
+  p_consent_template boolean default false,
+  p_is_anonymous boolean default false
+)
+returns public.mood_submissions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_count integer;
+  v_row public.mood_submissions;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception '当前未登录，请先登录后再投稿。';
+  end if;
+
+  if p_consent_public is distinct from true or p_consent_template is distinct from true then
+    raise exception '投稿前请先确认公开展示与模板授权。';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext(v_user_id::text));
+
+  select count(*) into v_count
+  from public.mood_submissions ms
+  where ms.user_id = v_user_id
+    and ms.created_at >= now() - interval '1 hour';
+
+  if v_count >= 10 then
+    raise exception '你本小时投稿次数已达上限（10次），请稍后再试。';
+  end if;
+
+  insert into public.mood_submissions (
+    user_id,
+    entry_date,
+    face,
+    note,
+    share_caption,
+    consent_public,
+    consent_template,
+    is_anonymous,
+    status,
+    review_comment,
+    reviewed_by,
+    reviewed_at
+  )
+  values (
+    v_user_id,
+    p_entry_date,
+    p_face,
+    nullif(btrim(coalesce(p_note, '')), ''),
+    nullif(btrim(coalesce(p_share_caption, '')), ''),
+    true,
+    true,
+    coalesce(p_is_anonymous, false),
+    'uploaded',
+    null,
+    null,
+    null
+  )
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+create or replace function public.withdraw_submission(
+  p_submission_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_row public.mood_submissions;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception '当前未登录，请先登录后再操作。';
+  end if;
+
+  select *
+  into v_row
+  from public.mood_submissions ms
+  where ms.id = p_submission_id
+    and ms.user_id = v_user_id
+    and ms.status <> 'withdrawn'
+  for update;
+
+  if not found then
+    raise exception '投稿不存在、已撤回，或无权限操作。';
+  end if;
+
+  update public.featured_templates ft
+  set is_active = false
+  where ft.source_submission_id = v_row.id
+    and ft.is_active = true;
+
+  update public.mood_submissions ms
+  set
+    status = 'withdrawn',
+    review_comment = '用户已撤回投稿。',
+    reviewed_by = null,
+    reviewed_at = null,
+    updated_at = now()
+  where ms.id = v_row.id;
+end;
+$$;
+
+grant usage on schema public to anon, authenticated;
+
+grant select on table public.featured_templates to anon, authenticated;
+grant select, insert, update, delete on table public.mood_entries to authenticated;
+grant select, insert, update on table public.profiles to authenticated;
+grant select, insert, update, delete on table public.mood_submissions to authenticated;
+
+grant execute on function public.submit_mood_submission(
+  text,
+  jsonb,
+  text,
+  text,
+  boolean,
+  boolean,
+  boolean
+) to authenticated;
+grant execute on function public.withdraw_submission(uuid) to authenticated;
