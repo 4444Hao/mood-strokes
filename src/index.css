@@ -35,24 +35,3 @@ body {
 #root {
   min-height: 100svh;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #2a221c;
-    --paper-deep: #3d3128;
-    --ink: #e8d9c6;
-    --ink-soft: #b8a693;
-    --line: #4a3e33;
-    --accent: #8b7358;
-    --accent-strong: #a08568;
-    --ok: #7a9665;
-    --warn: #a07060;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at 8% 8%, #332922 0%, transparent 28%),
-      radial-gradient(circle at 92% 90%, #3d2e22 0%, transparent 26%),
-      linear-gradient(180deg, var(--paper) 0%, #30271f 55%, #252019 100%);
-  }
-}
