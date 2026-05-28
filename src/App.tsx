@@ -82,8 +82,6 @@ function App() {
 
   const {
     featuredTemplates,
-    hasMore,
-    loadMoreFeatured,
     mySubmissions,
     reviewQueue,
     handleSubmitMood,
@@ -240,13 +238,7 @@ function App() {
       )
     }
     if (activePage === 'featured') {
-      return (
-        <FeaturedPage
-          templates={featuredTemplates}
-          hasMore={hasMore}
-          onLoadMore={loadMoreFeatured}
-        />
-      )
+      return <FeaturedPage templates={featuredTemplates} />
     }
     return (
       <TodayPage
@@ -286,8 +278,6 @@ function App() {
     storageStats,
     todayEntry,
     todayKey,
-    hasMore,
-    loadMoreFeatured,
     handleImportLocal,
     featuredTemplates,
     mySubmissions,

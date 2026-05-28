@@ -61,6 +61,8 @@ export function TodayPage({
   const [templateConfirmFace, setTemplateConfirmFace] = useState<MoodFace | null>(null)
   const [undoEntry, setUndoEntry] = useState<MoodEntry | null>(null)
   const [foldSection, setFoldSection] = useState<FoldSection>(null)
+  const [flipDir, setFlipDir] = useState<'left' | 'right' | null>(null)
+  const [flipKey, setFlipKey] = useState(0)
   const [submitBusy, setSubmitBusy] = useState(false)
   const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
@@ -102,6 +104,12 @@ export function TodayPage({
     setOverwriteConfirmOpen(false)
   }, [entry?.id, entry?.note, entry?.face])
 
+  const triggerFlip = useCallback((dir: 'left' | 'right') => {
+    setFlipDir(dir)
+    setFlipKey((k) => k + 1)
+    window.setTimeout(() => setFlipDir(null), 280)
+  }, [])
+
   const flipTo = useCallback((dir: 'prev' | 'next') => {
     const day = Number(dateKey.slice(-2))
     if (dir === 'prev' && day <= 1) {
@@ -119,20 +127,23 @@ export function TodayPage({
       onDateChange(`${nmk}-01`)
       return
     }
+    triggerFlip(dir === 'prev' ? 'left' : 'right')
     if (dir === 'prev') onDateChange(dateKeyOf(monthKey, Math.max(1, day - 1)))
     else onDateChange(dateKeyOf(monthKey, Math.min(totalDays, day + 1)))
-  }, [dateKey, monthKey, totalDays, isCurrentMonth, onDateChange])
+  }, [dateKey, monthKey, totalDays, isCurrentMonth, onDateChange, triggerFlip])
 
   const handleSelectDay = useCallback((day: number) => {
     const newKey = dateKeyOf(monthKey, day)
     if (newKey === dateKey) return
+    triggerFlip(Number(dateKey.slice(-2)) < day ? 'right' : 'left')
     onDateChange(newKey)
-  }, [dateKey, monthKey, onDateChange])
+  }, [dateKey, monthKey, onDateChange, triggerFlip])
 
   const handleBackToday = useCallback(() => {
     if (dateKey === todayKey) return
+    triggerFlip(Number(dateKey.slice(-2)) < todayDay ? 'right' : 'left')
     onDateChange(todayKey)
-  }, [dateKey, todayKey, onDateChange])
+  }, [dateKey, todayKey, todayDay, onDateChange, triggerFlip])
 
   const toggleFold = (section: FoldSection) => {
     setFoldSection((prev) => (prev === section ? null : section))
@@ -194,6 +205,8 @@ export function TodayPage({
     } finally { setSubmitBusy(false) }
   }
 
+  const flipClass = flipDir ? `flip-${flipDir}` : ''
+
   return (
     <section className="panel panel-compact">
       {/* ── 翻页导航 ── */}
@@ -216,9 +229,22 @@ export function TodayPage({
         </button>
       </div>
 
-      {/* ── 画板 ── */}
-      <div className="editor-stage">
-        <ThreeStrokeMoodEditor value={face} onChange={setFace} />
+      {/* ── 画板书本 ── */}
+      <div className="canvas-book">
+        <div className="canvas-book-spine" aria-hidden />
+        <div className="canvas-book-stack" aria-hidden />
+        <div className="canvas-book-stack" aria-hidden />
+
+        <article key={flipKey} className={`canvas-book-leaf ${flipClass}`}>
+          <div className="canvas-book-edge prev" onClick={() => flipTo('prev')} aria-label="翻到上一天" />
+          <div className="canvas-book-edge next" onClick={() => flipTo('next')} aria-label="翻到下一天" />
+
+          <div className="editor-stage">
+            <ThreeStrokeMoodEditor value={face} onChange={setFace} />
+          </div>
+        </article>
+
+        <p className="canvas-book-page-num">第 {selectedDay} / {totalDays} 页</p>
       </div>
 
       {/* ── 备注 + 保存 ── */}
