@@ -304,7 +304,7 @@ export function SettingsPage(props: SettingsPageProps) {
 
             {!auth.signedIn && (
               <p className="settings-note">
-                回跳地址：{redirectTarget}。若收不到邮件，请确认 Supabase 已配置该地址。
+                邮箱会提供登录链接，点击即可。
               </p>
             )}
           </>
@@ -402,7 +402,7 @@ export function SettingsPage(props: SettingsPageProps) {
       <div className="settings-card">
         <h3 className="settings-card-title">关于</h3>
         <p className="settings-note" style={{ textAlign: 'center', opacity: 0.6 }}>
-          三笔心情 · vibecoding 成果 · 仅供娱乐学习<br />
+          三笔心情 · vibecoding 成果 · 仅供娱乐<br />
           邮箱仅用于登录，不作其他用途
         </p>
         <div className="settings-actions" style={{ justifyContent: 'center' }}>

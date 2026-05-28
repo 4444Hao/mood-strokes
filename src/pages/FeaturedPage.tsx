@@ -78,7 +78,7 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
     <section className="panel">
       <div className="panel-head">
         <h2>精选池</h2>
-        <p>画与一句话，被轻轻放在这里。</p>
+        <p>三笔极简，情绪万千。</p>
       </div>
 
       <div className="folio-book">
