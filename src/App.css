@@ -808,6 +808,50 @@
   gap: 0.55rem;
 }
 
+.dialog-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(34, 23, 15, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dialog-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 251, 244, 0.96);
+  box-shadow: 0 12px 32px rgba(44, 28, 17, 0.18);
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dialog-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1.08rem;
+}
+
+.dialog-copy {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.dialog-input {
+  min-width: 100%;
+}
+
+.dialog-error {
+  margin: 0;
+  color: #9e3f2e;
+  font-size: 0.85rem;
+}
+
 .consent-row {
   display: flex;
   align-items: center;
