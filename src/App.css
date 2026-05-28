@@ -1,9 +1,9 @@
 .app-shell {
-  width: min(920px, calc(100% - 2rem));
-  margin: 2.4rem auto;
-  padding: 1.4rem;
+  width: min(920px, calc(100% - 1.6rem));
+  margin: 1.2rem auto;
+  padding: 0.8rem 1rem;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3)),
     repeating-linear-gradient(
@@ -15,38 +15,30 @@
   box-shadow: 0 12px 36px rgba(78, 51, 31, 0.08);
 }
 
-.app-header {
-  padding: 0.7rem 0.5rem 1rem;
-  animation: reveal 500ms ease;
+/* ── 紧凑顶栏 ── */
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.2rem 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
 }
 
-.app-mark {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  letter-spacing: 0.15em;
-}
-
-.app-title {
-  margin: 0.45rem 0 0.2rem;
+.app-bar-brand {
   font-family: var(--font-title);
-  font-size: clamp(1.75rem, 4.6vw, 2.5rem);
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.app-subtitle {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  color: var(--ink);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 .main-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
-  padding: 0.2rem 0.4rem 0.9rem;
-  border-bottom: 1px solid var(--line);
+  gap: 0.4rem;
 }
 
 .tab-chip,
@@ -87,7 +79,75 @@
 }
 
 .main-content {
-  padding: 1rem 0.35rem 0.2rem;
+  padding: 0.6rem 0.2rem 0.2rem;
+}
+
+/* ── 紧凑今日页 ── */
+
+.panel-compact {
+  gap: 0.55rem !important;
+}
+
+/* 翻页导航 */
+
+.flip-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.flip-nav-label {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flip-nav-btn {
+  padding: 0.25rem 0.55rem !important;
+  font-size: 0.9rem !important;
+}
+
+/* 备注 + 保存 */
+
+.note-save-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.note-textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.75);
+  padding: 0.5rem 0.65rem;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.note-save-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+/* 折叠入口行 */
+
+.fold-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.2rem;
+  border-top: 1px dashed rgba(139, 101, 69, 0.15);
 }
 
 .panel {
@@ -1244,77 +1304,36 @@ textarea:disabled {
 
 @media (max-width: 680px) {
   .app-shell {
-    width: calc(100% - 1rem);
-    margin: 0.6rem auto;
-    padding: 0.9rem;
-    border-radius: 18px;
+    width: calc(100% - 0.5rem);
+    margin: 0.3rem auto;
+    padding: 0.6rem 0.7rem;
+    border-radius: 14px;
   }
 
-  .calendar-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+  .app-bar {
+    padding: 0.1rem 0.1rem 0.4rem;
   }
 
-  .month-toolbar,
-  .month-view-toggle {
-    gap: 0.45rem;
+  .app-bar-brand {
+    font-size: 0.95rem;
   }
 
-  .month-toolbar .ghost-btn,
-  .month-view-toggle .ghost-btn,
-  .week-toolbar .ghost-btn {
-    padding: 0.4rem 0.78rem;
-    font-size: 0.9rem;
+  .tab-chip {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
   }
 
-  .week-range {
-    font-size: 0.84rem;
+  .three-canvas {
+    width: min(300px, 100%);
   }
 
-  .week-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .week-day-card-mobile {
-    min-height: unset;
-    aspect-ratio: 1 / 1;
-    border-radius: 16px;
-    padding: 0.42rem 0.36rem;
-  }
-
-  .week-grid .week-day-card-mobile:nth-child(n + 5) {
-    grid-column: span 1;
-  }
-
-  .week-grid .week-day-card-mobile:nth-child(5) {
-    grid-column: 1 / 2;
-  }
-
-  .week-grid .week-day-card-mobile:nth-child(6) {
-    grid-column: 2 / 3;
-  }
-
-  .week-grid .week-day-card-mobile:nth-child(7) {
-    grid-column: 3 / 4;
-  }
-
-  .week-face-thumb {
-    max-width: 72px;
-  }
-
-  .day-card {
-    min-height: 64px;
-  }
-
-  .month-detail-body {
-    align-items: flex-start;
+  .note-save-row {
     flex-direction: column;
   }
 
-  .month-face-large {
-    width: 88px;
-    min-width: 88px;
+  .note-save-actions {
+    flex-direction: row;
+    align-self: flex-end;
   }
 
   .featured-grid {

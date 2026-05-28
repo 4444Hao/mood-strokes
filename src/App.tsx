@@ -301,24 +301,21 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <p className="app-mark">三笔心情</p>
-        <h1 className="app-title">三笔极简，情绪万千。</h1>
-        <p className="app-subtitle">今天的你，是哪张脸？</p>
+      <header className="app-bar">
+        <span className="app-bar-brand">三笔心情</span>
+        <nav className="main-tabs" aria-label="主页面">
+          {PAGE_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`tab-chip ${activePage === tab.id ? 'is-active' : ''}`}
+              onClick={() => setActivePage(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </header>
-
-      <nav className="main-tabs" aria-label="主页面">
-        {PAGE_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`tab-chip ${activePage === tab.id ? 'is-active' : ''}`}
-            onClick={() => setActivePage(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
 
       <main className="main-content">
         <ErrorBoundary>{activeContent}</ErrorBoundary>

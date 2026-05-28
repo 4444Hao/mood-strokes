@@ -17,14 +17,14 @@ describe('TodayPage', () => {
     onSubmitMood: async () => {},
   }
 
-  it('shows editor and heatmap when no entry exists', () => {
+  it('shows canvas and save button on load', () => {
     render(<TodayPage {...baseProps} />)
-    expect(screen.getByText('三笔心情')).toBeInTheDocument()
-    expect(screen.getByText('2026 年 5 月')).toBeInTheDocument()
     expect(screen.getByText('保存')).toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.getByText('📅 月历')).toBeInTheDocument()
   })
 
-  it('calls onSave when entry is present and user saves', () => {
+  it('calls onSave when entry exists and user covers', () => {
     const face = getDefaultPreset().face
     const onSave = vi.fn()
     render(
@@ -43,20 +43,19 @@ describe('TodayPage', () => {
       />,
     )
 
-    fireEvent.change(screen.getAllByRole('textbox')[0], {
+    fireEvent.change(screen.getByRole('textbox'), {
       target: { value: '今天慢慢来' },
     })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
-    fireEvent.click(screen.getByRole('button', { name: '覆盖保存' }))
+    fireEvent.click(screen.getByRole('button', { name: '覆盖' }))
 
     expect(onSave).toHaveBeenCalledTimes(1)
-    const [note, savedFace] = onSave.mock.calls[0]
-    expect(note).toBe('今天慢慢来')
-    expect(savedFace.mode).toBe('expressive')
-    expect(screen.getByText('已覆盖这天。')).toBeInTheDocument()
+    expect(onSave.mock.calls[0][0]).toBe('今天慢慢来')
+    expect(onSave.mock.calls[0][1].mode).toBe('expressive')
+    expect(screen.getByText('已覆盖。')).toBeInTheDocument()
   })
 
-  it('shows "回到今天" button when viewing a different date', () => {
+  it('shows back-to-today chip when on a past date', () => {
     render(
       <TodayPage
         {...baseProps}
@@ -74,12 +73,21 @@ describe('TodayPage', () => {
       />,
     )
     expect(screen.getByRole('button', { name: '回到今天' })).toBeInTheDocument()
-    const notes = screen.getAllByText('之前的一天')
-    expect(notes.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('does not show "回到今天" when viewing today', () => {
+  it('does not show back-to-today on today', () => {
     render(<TodayPage {...baseProps} />)
     expect(screen.queryByRole('button', { name: '回到今天' })).not.toBeInTheDocument()
+  })
+
+  it('toggles fold sections', () => {
+    render(<TodayPage {...baseProps} />)
+    fireEvent.click(screen.getByText('📅 月历'))
+    expect(screen.getByText('2026 年 5 月')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('📅 月历'))
+    expect(screen.queryByText('2026 年 5 月')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('✉ 投稿'))
+    expect(screen.getByText('上传到精选池')).toBeInTheDocument()
   })
 })
