@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import { daysInMonth } from '../lib/date'
 import type { MoodEntry } from '../types/mood'
@@ -86,6 +86,8 @@ export function MonthPage({
   onJumpToDate,
 }: MonthPageProps) {
   const [viewMode, setViewMode] = useState<MonthViewMode>('week')
+  const [flipDir, setFlipDir] = useState<'left' | 'right' | null>(null)
+  const [flipKey, setFlipKey] = useState(0)
   const totalDays = daysInMonth(monthKey)
   const entryByDay = useMemo(() => {
     const map = new Map<number, MoodEntry>()
@@ -114,6 +116,23 @@ export function MonthPage({
   }, [entries, monthKey])
 
   const selectedEntry = entryByDay.get(selectedDay)
+  const flipTo = useCallback(
+    (dir: 'prev' | 'next') => {
+      if (dir === 'prev' && selectedDay <= 1) return
+      if (dir === 'next' && selectedDay >= totalDays) return
+      setFlipDir(dir === 'prev' ? 'left' : 'right')
+      setFlipKey((k) => k + 1)
+      window.setTimeout(() => setFlipDir(null), 280)
+      if (dir === 'prev') {
+        setSelectedDay((day) => Math.max(1, day - 1))
+      } else {
+        setSelectedDay((day) => Math.min(totalDays, day + 1))
+      }
+    },
+    [selectedDay, totalDays],
+  )
+
+  const flipClass = flipDir ? `flip-${flipDir}` : ''
   const selectedDateLabel = `${monthLabel} ${selectedDay} 日`
   const selectedDateKey = dateKeyOf(monthKey, selectedDay)
   const emptyDayQuote = quoteForDate(selectedDateKey)
@@ -254,48 +273,74 @@ export function MonthPage({
           </section>
         </>
       ) : (
-        <section className="month-hanger">
-          <div className="month-hanger-nav">
+        <section className="hanger-book">
+          <div className="hanger-book-spine" aria-hidden />
+
+          <div className="hanger-book-nav">
             <button
               type="button"
               className="ghost-btn"
-              onClick={() => setSelectedDay((day) => Math.max(1, day - 1))}
+              onClick={() => flipTo('prev')}
               disabled={selectedDay <= 1}
             >
               上一天
             </button>
-            <p className="month-hanger-date">{selectedDateLabel}</p>
+            <p className="hanger-book-date">{selectedDateLabel}</p>
             <button
               type="button"
               className="ghost-btn"
-              onClick={() => setSelectedDay((day) => Math.min(totalDays, day + 1))}
+              onClick={() => flipTo('next')}
               disabled={selectedDay >= totalDays}
             >
               下一天
             </button>
           </div>
 
-          <article className="month-hanger-sheet">
-            {selectedEntry ? (
-              <div className="month-detail-body">
-                <MoodFaceSvg face={selectedEntry.face} className="month-face-large" />
-                <div className="month-detail-copy">
-                  <p className="month-detail-note">{selectedEntry.note || '今天没有留下备注。'}</p>
-                  <p className="month-detail-meta">最后更新：{updatedAtLabel}</p>
-                  <p className={`sync-pill ${syncStatusClass(selectedEntry)}`}>
-                    同步状态：{syncStatusLabel(selectedEntry)}
-                  </p>
+          <div className="hanger-book-pages">
+            <div className="hanger-book-stack" aria-hidden />
+            <div className="hanger-book-stack" aria-hidden />
+
+            <article key={flipKey} className={`hanger-book-leaf ${flipClass}`}>
+              <div
+                className="click-zone prev"
+                onClick={() => flipTo('prev')}
+                role="button"
+                tabIndex={-1}
+                aria-label="翻到上一天"
+              />
+              <div
+                className="click-zone next"
+                onClick={() => flipTo('next')}
+                role="button"
+                tabIndex={-1}
+                aria-label="翻到下一天"
+              />
+
+              {selectedEntry ? (
+                <div className="month-detail-body">
+                  <MoodFaceSvg face={selectedEntry.face} className="month-face-large" />
+                  <div className="month-detail-copy">
+                    <p className="month-detail-note">{selectedEntry.note || '今天没有留下备注。'}</p>
+                    <p className="month-detail-meta">最后更新：{updatedAtLabel}</p>
+                    <p className={`sync-pill ${syncStatusClass(selectedEntry)}`}>
+                      同步状态：{syncStatusLabel(selectedEntry)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="month-hanger-empty">
-                <p className="empty-tip">{emptyDayQuote}</p>
-                <button type="button" className="ghost-btn" onClick={() => onJumpToDate(selectedDateKey)}>
-                  去今日页补记
-                </button>
-              </div>
-            )}
-          </article>
+              ) : (
+                <div className="hanger-book-empty">
+                  <p className="empty-tip">{emptyDayQuote}</p>
+                  <button type="button" className="ghost-btn" onClick={() => onJumpToDate(selectedDateKey)}>
+                    去今日页补记
+                  </button>
+                </div>
+              )}
+            </article>
+
+            <p className="hanger-book-page-num">
+              第 {selectedDay} / {totalDays} 页
+            </p>
+          </div>
         </section>
       )}
     </section>

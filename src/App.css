@@ -613,6 +613,156 @@
   background: rgba(255, 251, 244, 0.7);
 }
 
+/* ── 挂历 · 翻本子 ── */
+
+.hanger-book {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255, 251, 244, 0.7);
+  padding: 0.9rem 0.9rem 0.9rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.hanger-book-spine {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 0;
+  border-left: 1px dashed rgba(139, 101, 69, 0.3);
+}
+
+.hanger-book-spine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 14px,
+    rgba(128, 94, 63, 0.22) 15px,
+    rgba(128, 94, 63, 0.22) 16px
+  );
+  width: 4px;
+  left: -2.5px;
+}
+
+.hanger-book-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hanger-book-date {
+  margin: 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.hanger-book-pages {
+  position: relative;
+}
+
+.hanger-book-stack {
+  position: absolute;
+  inset: 4px 3px -3px 3px;
+  border: 1px solid rgba(126, 96, 69, 0.1);
+  border-radius: 4px 14px 14px 4px;
+  background: rgba(241, 231, 217, 0.55);
+  z-index: 0;
+}
+
+.hanger-book-stack + .hanger-book-stack {
+  inset: 7px 6px -6px 6px;
+  opacity: 0.5;
+}
+
+.hanger-book-leaf {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(126, 96, 69, 0.2);
+  border-radius: 4px 14px 14px 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.28)),
+    rgba(255, 249, 241, 0.78);
+  padding: 0.85rem;
+  transition: transform 280ms cubic-bezier(0.25, 0.1, 0.15, 1), opacity 180ms ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hanger-book-leaf::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 14px;
+  background: linear-gradient(135deg, rgba(185, 159, 130, 0.18) 0%, transparent 60%);
+  border-radius: 0 0 14px 0;
+  pointer-events: none;
+}
+
+.hanger-book-leaf.flip-left {
+  animation: flipLeft 280ms cubic-bezier(0.25, 0.1, 0.15, 1);
+}
+
+.hanger-book-leaf.flip-right {
+  animation: flipRight 280ms cubic-bezier(0.25, 0.1, 0.15, 1);
+}
+
+@keyframes flipLeft {
+  0% { transform: translateX(0) rotateY(0); opacity: 1; }
+  40% { transform: translateX(6%) rotateY(-4deg); opacity: 0.7; }
+  100% { transform: translateX(0) rotateY(0); opacity: 1; }
+}
+
+@keyframes flipRight {
+  0% { transform: translateX(0) rotateY(0); opacity: 1; }
+  40% { transform: translateX(-6%) rotateY(4deg); opacity: 0.7; }
+  100% { transform: translateX(0) rotateY(0); opacity: 1; }
+}
+
+.hanger-book-leaf .click-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  z-index: 2;
+}
+
+.hanger-book-leaf .click-zone.prev {
+  left: 0;
+  cursor: w-resize;
+}
+
+.hanger-book-leaf .click-zone.next {
+  right: 0;
+  cursor: e-resize;
+}
+
+.hanger-book-page-num {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.hanger-book-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* ── 旧月历保留样式 ── */
+
 .month-hanger {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -650,6 +800,7 @@
   flex-direction: column;
   gap: 0.45rem;
 }
+
 
 .month-detail-title {
   margin: 0;
