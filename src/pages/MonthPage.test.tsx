@@ -4,6 +4,7 @@ import { MonthPage } from './MonthPage'
 
 describe('MonthPage', () => {
   const face = getDefaultPreset().face
+  const noJump = () => {}
 
   it('renders entries and shows selected day details', () => {
     render(
@@ -15,6 +16,7 @@ describe('MonthPage', () => {
         onPrevMonth={() => {}}
         onNextMonth={() => {}}
         onBackCurrentMonth={() => {}}
+        onJumpToDate={noJump}
         entries={[
           {
             id: 'm1',
@@ -47,6 +49,7 @@ describe('MonthPage', () => {
         onPrevMonth={onPrevMonth}
         onNextMonth={onNextMonth}
         onBackCurrentMonth={onBackCurrentMonth}
+        onJumpToDate={noJump}
         entries={[]}
       />,
     )
@@ -70,6 +73,7 @@ describe('MonthPage', () => {
         onPrevMonth={() => {}}
         onNextMonth={() => {}}
         onBackCurrentMonth={() => {}}
+        onJumpToDate={noJump}
         entries={[]}
       />,
     )
@@ -88,7 +92,7 @@ describe('MonthPage', () => {
     expect(screen.getByText((content) => emptyQuotes.includes(content))).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: '挂历翻页' }))
-    expect(screen.getByText('可以切到今日页，为这一天补上三笔心情。')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '去今日页补记' })).toBeInTheDocument()
   })
 
   it('supports hanger day flip navigation', () => {
@@ -101,6 +105,7 @@ describe('MonthPage', () => {
         onPrevMonth={() => {}}
         onNextMonth={() => {}}
         onBackCurrentMonth={() => {}}
+        onJumpToDate={noJump}
         entries={[
           {
             id: 'm2',

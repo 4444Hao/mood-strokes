@@ -193,6 +193,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const [isEditing, setIsEditing] = useState(false)
   const [tuneDone, setTuneDone] = useState(false)
   const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tuneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftRef = useRef<Point | null>(null)
+  const rafRef = useRef<number | null>(null)
   const lastExternalRef = useRef<MoodFace | undefined>(undefined)
 
   const activateEditing = useCallback(() => {
@@ -210,6 +213,12 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     return () => {
       if (editTimerRef.current) {
         clearTimeout(editTimerRef.current)
+      }
+      if (tuneTimerRef.current) {
+        clearTimeout(tuneTimerRef.current)
+      }
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
       }
     }
   }, [])
@@ -324,16 +333,28 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       return
     }
     const point = getSvgPoint(event.currentTarget, event.clientX, event.clientY)
-    setDraft((prev) =>
-      prev
-        ? [...prev, { ...point, t: Date.now(), pressure: event.pressure > 0 ? event.pressure : undefined }]
-        : prev,
-    )
+    const next: Point = { ...point, t: Date.now(), pressure: event.pressure > 0 ? event.pressure : undefined }
+    draftRef.current = next
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null
+        const pt = draftRef.current
+        if (pt) {
+          setDraft((prev) => (prev ? [...prev, pt] : prev))
+          draftRef.current = null
+        }
+      })
+    }
   }
 
   const endDraw = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
     if (phase !== 'draw' || !draft || draft.length < 2) {
       setDraft(null)
+      draftRef.current = null
       return
     }
     setStrokes((prev) => [
@@ -345,6 +366,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
       },
     ])
     setDraft(null)
+    draftRef.current = null
   }
 
   const undoLast = () => {
@@ -408,7 +430,8 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     setIsEditing(false)
     setDragState(null)
     setTuneDone(true)
-    window.setTimeout(() => setTuneDone(false), 1400)
+    if (tuneTimerRef.current) clearTimeout(tuneTimerRef.current)
+    tuneTimerRef.current = window.setTimeout(() => setTuneDone(false), 1400)
   }
 
   const startNudge = (

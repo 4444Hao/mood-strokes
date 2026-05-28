@@ -12,6 +12,7 @@ type MonthPageProps = {
   onPrevMonth: () => void
   onNextMonth: () => void
   onBackCurrentMonth: () => void
+  onJumpToDate: (dateKey: string) => void
 }
 
 type MonthViewMode = 'week' | 'hanger'
@@ -49,6 +50,22 @@ function dateKeyOf(monthKey: string, day: number): string {
   return `${monthKey}-${String(day).padStart(2, '0')}`
 }
 
+function computeMonthStats(entryDays: Set<number>): { recordedDays: number; longestStreak: number } {
+  if (entryDays.size === 0) return { recordedDays: 0, longestStreak: 0 }
+  const sorted = Array.from(entryDays).sort((a, b) => a - b)
+  let longest = 1
+  let current = 1
+  for (let i = 1; i < sorted.length; i += 1) {
+    if (sorted[i] === sorted[i - 1] + 1) {
+      current += 1
+      longest = Math.max(longest, current)
+    } else {
+      current = 1
+    }
+  }
+  return { recordedDays: sorted.length, longestStreak: longest }
+}
+
 function quoteForDate(dateKey: string): string {
   let hash = 7
   for (let i = 0; i < dateKey.length; i += 1) {
@@ -66,6 +83,7 @@ export function MonthPage({
   onPrevMonth,
   onNextMonth,
   onBackCurrentMonth,
+  onJumpToDate,
 }: MonthPageProps) {
   const [viewMode, setViewMode] = useState<MonthViewMode>('week')
   const totalDays = daysInMonth(monthKey)
@@ -76,6 +94,10 @@ export function MonthPage({
       map.set(day, entry)
     })
     return map
+  }, [entries])
+  const monthStats = useMemo(() => {
+    const days = new Set(entries.map((e) => Number(e.date.slice(-2))))
+    return computeMonthStats(days)
   }, [entries])
   const [selectedDay, setSelectedDay] = useState<number>(1)
 
@@ -144,7 +166,7 @@ export function MonthPage({
     <section className="panel">
       <div className="panel-head">
         <h2>这个月的你</h2>
-        <p>{monthLabel}</p>
+        <p>{monthLabel} · 记录 {monthStats.recordedDays} 天{monthStats.longestStreak > 0 ? ` · 最长连续 ${monthStats.longestStreak} 天` : ''}</p>
       </div>
 
       <div className="month-toolbar">
@@ -222,7 +244,12 @@ export function MonthPage({
                 </div>
               </div>
             ) : (
-              <p className="empty-tip">{emptyDayQuote}</p>
+              <div className="month-hanger-empty">
+                <p className="empty-tip">{emptyDayQuote}</p>
+                <button type="button" className="ghost-btn" onClick={() => onJumpToDate(selectedDateKey)}>
+                  去今日页补记
+                </button>
+              </div>
             )}
           </section>
         </>
@@ -263,7 +290,9 @@ export function MonthPage({
             ) : (
               <div className="month-hanger-empty">
                 <p className="empty-tip">{emptyDayQuote}</p>
-                <p className="month-detail-meta">可以切到今日页，为这一天补上三笔心情。</p>
+                <button type="button" className="ghost-btn" onClick={() => onJumpToDate(selectedDateKey)}>
+                  去今日页补记
+                </button>
               </div>
             )}
           </article>

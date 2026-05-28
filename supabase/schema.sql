@@ -377,6 +377,72 @@ grant select, insert, update, delete on table public.mood_entries to authenticat
 grant select, insert, update on table public.profiles to authenticated;
 grant select, insert, update, delete on table public.mood_submissions to authenticated;
 
+create or replace function public.feature_submission(
+  p_submission_id uuid,
+  p_admin_id uuid,
+  p_title text,
+  p_description text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_submission public.mood_submissions;
+begin
+  if not public.is_admin() then
+    raise exception '当前账号不是管理员，无法进行精选审核。';
+  end if;
+
+  select *
+  into v_submission
+  from public.mood_submissions ms
+  where ms.id = p_submission_id
+  for update;
+
+  if not found then
+    raise exception '投稿不存在。';
+  end if;
+
+  if v_submission.consent_template is distinct from true then
+    raise exception '该投稿未授权作为模板，无法入选。';
+  end if;
+
+  insert into public.featured_templates (
+    source_submission_id,
+    created_by,
+    title,
+    description,
+    face,
+    note,
+    is_anonymous,
+    is_active
+  )
+  values (
+    v_submission.id,
+    p_admin_id,
+    coalesce(nullif(btrim(p_title), ''), '今日精选'),
+    nullif(btrim(coalesce(p_description, '')), ''),
+    v_submission.face,
+    v_submission.note,
+    coalesce(v_submission.is_anonymous, false),
+    true
+  );
+
+  update public.mood_submissions ms
+  set
+    status = 'featured',
+    review_comment = '已入选模板库，感谢你的投稿。',
+    reviewed_by = p_admin_id,
+    reviewed_at = now(),
+    updated_at = now()
+  where ms.id = v_submission.id;
+end;
+$$;
+
+grant execute on function public.feature_submission(uuid, uuid, text, text) to authenticated;
+
 grant execute on function public.submit_mood_submission(
   text,
   jsonb,

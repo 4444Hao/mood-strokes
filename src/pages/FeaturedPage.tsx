@@ -3,6 +3,8 @@ import type { FeaturedTemplate } from '../types/curation'
 
 type FeaturedPageProps = {
   templates: FeaturedTemplate[]
+  hasMore?: boolean
+  onLoadMore?: () => void
 }
 
 function authorLabel(template: FeaturedTemplate): string {
@@ -15,7 +17,7 @@ function authorLabel(template: FeaturedTemplate): string {
   return `用户 ${template.createdBy.slice(0, 8)}`
 }
 
-export function FeaturedPage({ templates }: FeaturedPageProps) {
+export function FeaturedPage({ templates, hasMore, onLoadMore }: FeaturedPageProps) {
   return (
     <section className="panel">
       <div className="panel-head">
@@ -29,18 +31,27 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
           <p className="block-note">当有作品入选后，会在这里展示表情、描述和原作者名字。</p>
         </section>
       ) : (
-        <div className="featured-grid" aria-label="精选作品列表">
-          {templates.map((template) => (
-            <article key={template.id} className="featured-card">
-              <MoodFaceSvg face={template.face} className="featured-face" />
-              <div className="featured-copy">
-                <p className="featured-title">{template.title}</p>
-                <p className="featured-note">{template.note || template.description || '这张脸没有留下文字。'}</p>
-                <p className="featured-author">by {authorLabel(template)}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        <>
+          <div className="featured-grid" aria-label="精选作品列表">
+            {templates.map((template) => (
+              <article key={template.id} className="featured-card">
+                <MoodFaceSvg face={template.face} className="featured-face" />
+                <div className="featured-copy">
+                  <p className="featured-title">{template.title}</p>
+                  <p className="featured-note">{template.note || template.description || '这张脸没有留下文字。'}</p>
+                  <p className="featured-author">by {authorLabel(template)}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+          {hasMore && onLoadMore ? (
+            <div style={{ textAlign: 'center', marginTop: '0.8rem' }}>
+              <button type="button" className="ghost-btn" onClick={onLoadMore}>
+                加载更多
+              </button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   )

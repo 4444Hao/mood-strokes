@@ -18,6 +18,8 @@ const SETTINGS = [
   '投稿功能默认关闭，仅在你主动上传时生效。',
 ]
 
+type ImportResult = { added: number; skipped: number; errors: number }
+
 type SettingsPageProps = {
   stats: StorageStats
   auth: AuthSummary
@@ -30,6 +32,7 @@ type SettingsPageProps = {
   onSync: (mode: SyncMode) => Promise<SyncSummary>
   onRefreshAuth: () => Promise<void>
   onExport: () => void
+  onImport: (jsonString: string) => ImportResult
   onClearLocal: () => void
   mySubmissions: MoodSubmission[]
   reviewQueue: MoodSubmission[]
@@ -100,6 +103,7 @@ export function SettingsPage({
   onSync,
   onRefreshAuth,
   onExport,
+  onImport,
   onClearLocal,
   mySubmissions,
   reviewQueue,
@@ -208,6 +212,33 @@ export function SettingsPage({
     setHint('导出完成，文件已下载到本地。')
   }
 
+  const handleImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const result = onImport(reader.result as string)
+          setHint(
+            `导入完成：新增 ${result.added} 条，跳过 ${result.skipped} 条（已有更新版本），${result.errors ? `解析失败 ${result.errors} 条。` : ''}`,
+          )
+        } catch (error) {
+          const message = error instanceof Error ? error.message : '导入失败，请检查文件格式。'
+          setHint(message)
+        }
+      }
+      reader.onerror = () => {
+        setHint('文件读取失败，请重试。')
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
   const handleInstall = async () => {
     if (!canInstallPrompt) {
       setHint('当前浏览器未提供安装弹窗。你可以在浏览器菜单中选择“添加到主屏幕”。')
@@ -229,6 +260,10 @@ export function SettingsPage({
     const clean = email.trim()
     if (!clean) {
       setHint('请输入用于登录的邮箱地址。')
+      return
+    }
+    if (!navigator.onLine) {
+      setHint('当前处于离线状态，请连接网络后再登录。')
       return
     }
     if (emailCooldown > 0) {
@@ -266,6 +301,10 @@ export function SettingsPage({
   }
 
   const performSync = async (mode: SyncMode) => {
+    if (!navigator.onLine) {
+      setHint('当前处于离线状态，请连接网络后再同步。')
+      return
+    }
     try {
       setBusyAction('sync')
       const summary = await onSync(mode)
@@ -636,6 +675,11 @@ export function SettingsPage({
 
       <div className="settings-stats" aria-label="本地数据统计">
         <p className="settings-stats-title">本地记录概览</p>
+        {!auth.signedIn && stats.total > 0 ? (
+          <p className="settings-note" style={{ color: '#8d5b2f', marginBottom: '0.4rem' }}>
+            你的记录仅保存在本设备上。建议登录并同步到云端，或定期导出备份，以防浏览器数据被清除后丢失。
+          </p>
+        ) : null}
         <p>总记录：{stats.total}</p>
         <p>默认三笔：{stats.parametric}</p>
         <p>自由手绘：{stats.freehand}</p>
@@ -670,6 +714,9 @@ export function SettingsPage({
       <div className="settings-actions">
         <button type="button" className="ghost-btn" onClick={handleExport}>
           导出数据
+        </button>
+        <button type="button" className="ghost-btn" onClick={handleImport}>
+          导入数据
         </button>
         <button type="button" className="ghost-btn warn" onClick={handleClear}>
           清空本地数据

@@ -1,26 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
-import {
-  getAuthSummary,
-  getSyncMeta,
-  signInWithEmail,
-  signOutCloud,
-  syncWithCloud,
-  type AuthSummary,
-  type SyncMeta,
-  type SyncMode,
-  type SyncSummary,
-} from './lib/cloudSync'
-import {
-  approveSubmission,
-  featureSubmission,
-  listFeaturedTemplates,
-  listMySubmissions,
-  listReviewQueue,
-  rejectSubmission,
-  submitMoodEntry,
-  withdrawSubmission,
-} from './lib/curation'
+import { useAuth } from './hooks/useAuth'
+import { useCuration } from './hooks/useCuration'
+import type { SyncMode } from './lib/cloudSync'
 import {
   compareMonthKey,
   formatCnDate,
@@ -33,17 +15,19 @@ import {
   listEntriesByMonth,
   saveOrUpdateEntry,
   getEntryByDate,
+  getEarliestDateKey,
   clearAllEntries,
   exportEntriesPayload,
+  importEntriesPayload,
   getStorageStats,
   type StorageStats,
 } from './lib/storage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { MonthPage } from './pages/MonthPage'
 import { FeaturedPage } from './pages/FeaturedPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import type { MoodEntry, MoodFace } from './types/mood'
-import type { FeaturedTemplate, MoodSubmission, SubmitMoodPayload } from './types/curation'
 
 type PageId = 'today' | 'month' | 'featured' | 'settings'
 type BeforeInstallPromptEvent = Event & {
@@ -63,10 +47,21 @@ const PAGE_TABS: PageTab[] = [
   { id: 'settings', label: '设置' },
 ]
 
-const EARLIEST_DATE_KEY = '2026-05-01'
+const FALLBACK_EARLIEST_DATE = '2026-05-01'
+
+function hashToPage(hash: string): PageId | null {
+  const page = hash.replace(/^#/, '')
+  if (page === 'today' || page === 'month' || page === 'featured' || page === 'settings') {
+    return page
+  }
+  return null
+}
 
 function App() {
-  const [activePage, setActivePage] = useState<PageId>('today')
+  const earliestDateKey = getEarliestDateKey() ?? FALLBACK_EARLIEST_DATE
+  const [activePage, setActivePage] = useState<PageId>(
+    () => hashToPage(window.location.hash) ?? 'today',
+  )
   const todayKey = toDateKey(new Date())
   const [entryDateKey, setEntryDateKey] = useState(todayKey)
   const currentMonthKey = toMonthKey(todayKey)
@@ -83,16 +78,46 @@ function App() {
     dirty: 0,
     synced: 0,
   })
-  const [authSummary, setAuthSummary] = useState<AuthSummary>({
-    configured: false,
-    signedIn: false,
-  })
-  const [syncMeta, setSyncMeta] = useState<SyncMeta>({})
-  const [featuredTemplates, setFeaturedTemplates] = useState<FeaturedTemplate[]>([])
-  const [mySubmissions, setMySubmissions] = useState<MoodSubmission[]>([])
-  const [reviewQueue, setReviewQueue] = useState<MoodSubmission[]>([])
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
+
+  const {
+    authSummary,
+    syncMeta,
+    refreshAuth,
+    handleSignIn,
+    handleSignOut,
+    handleCloudSync,
+  } = useAuth()
+
+  const {
+    featuredTemplates,
+    hasMore,
+    loadMoreFeatured,
+    mySubmissions,
+    reviewQueue,
+    handleSubmitMood,
+    handleWithdrawSubmission,
+    handleApproveSubmission,
+    handleRejectSubmission,
+    handleFeatureSubmission,
+  } = useCuration(authSummary)
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const page = hashToPage(window.location.hash)
+      if (page) setActivePage(page)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  useEffect(() => {
+    const target = `#${activePage}`
+    if (window.location.hash !== target) {
+      window.history.replaceState(null, '', target)
+    }
+  }, [activePage])
 
   const reloadEntries = useCallback(() => {
     setTodayEntry(getEntryByDate(entryDateKey))
@@ -102,18 +127,7 @@ function App() {
 
   useEffect(() => {
     reloadEntries()
-    setSyncMeta(getSyncMeta())
   }, [reloadEntries])
-
-  useEffect(() => {
-    if (!authSummary.configured) {
-      setFeaturedTemplates([])
-      return
-    }
-    void listFeaturedTemplates()
-      .then(setFeaturedTemplates)
-      .catch(() => setFeaturedTemplates([]))
-  }, [authSummary.configured])
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -140,20 +154,6 @@ function App() {
     }
   }, [])
 
-  const refreshAuth = useCallback(async () => {
-    const next = await getAuthSummary()
-    setAuthSummary(next)
-  }, [])
-
-  useEffect(() => {
-    void refreshAuth()
-    const onFocus = () => {
-      void refreshAuth()
-    }
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [refreshAuth])
-
   const handleSaveToday = useCallback(
     (note: string, face: MoodFace) => {
       saveOrUpdateEntry({
@@ -176,6 +176,15 @@ function App() {
     reloadEntries()
   }, [reloadEntries])
 
+  const handleImportLocal = useCallback(
+    (jsonString: string) => {
+      const result = importEntriesPayload(jsonString)
+      reloadEntries()
+      return result
+    },
+    [reloadEntries],
+  )
+
   const handleExportLocal = useCallback(() => {
     const payload = exportEntriesPayload()
     const blob = new Blob([payload], { type: 'application/json' })
@@ -190,22 +199,11 @@ function App() {
     window.URL.revokeObjectURL(url)
   }, [])
 
-  const handleSignIn = useCallback(async (email: string) => {
-    await signInWithEmail(email)
-  }, [])
-
-  const handleSignOut = useCallback(async () => {
-    await signOutCloud()
-    await refreshAuth()
-  }, [refreshAuth])
-
-  const handleCloudSync = useCallback(async (mode: SyncMode): Promise<SyncSummary> => {
-    const summary = await syncWithCloud(mode)
+  const handleCloudSyncWithReload = useCallback(async (mode: SyncMode) => {
+    const summary = await handleCloudSync(mode)
     reloadEntries()
-    setSyncMeta(getSyncMeta())
-    await refreshAuth()
     return summary
-  }, [refreshAuth, reloadEntries])
+  }, [handleCloudSync, reloadEntries])
 
   const handleInstallApp = useCallback(async (): Promise<boolean> => {
     if (!installPromptEvent) {
@@ -220,80 +218,6 @@ function App() {
     }
     return false
   }, [installPromptEvent])
-
-  const reloadCuration = useCallback(async () => {
-    if (!authSummary.configured || !authSummary.signedIn) {
-      setMySubmissions([])
-      setReviewQueue([])
-      return
-    }
-    try {
-      const mine = await listMySubmissions()
-      setMySubmissions(mine)
-    } catch {
-      setMySubmissions([])
-    }
-    if (authSummary.role === 'admin') {
-      try {
-        const queue = await listReviewQueue()
-        setReviewQueue(queue)
-      } catch {
-        setReviewQueue([])
-      }
-    } else {
-      setReviewQueue([])
-    }
-  }, [authSummary.configured, authSummary.role, authSummary.signedIn])
-
-  useEffect(() => {
-    void reloadCuration()
-  }, [reloadCuration])
-
-  const handleSubmitMood = useCallback(
-    async (payload: SubmitMoodPayload) => {
-      await submitMoodEntry(payload)
-      await reloadCuration()
-    },
-    [reloadCuration],
-  )
-
-  const handleWithdrawSubmission = useCallback(
-    async (submissionId: string) => {
-      await withdrawSubmission(submissionId)
-      await reloadCuration()
-    },
-    [reloadCuration],
-  )
-
-  const handleApproveSubmission = useCallback(
-    async (submissionId: string, reviewComment?: string) => {
-      await approveSubmission(submissionId, reviewComment)
-      await reloadCuration()
-    },
-    [reloadCuration],
-  )
-
-  const handleRejectSubmission = useCallback(
-    async (submissionId: string, reviewComment?: string) => {
-      await rejectSubmission(submissionId, reviewComment)
-      await reloadCuration()
-    },
-    [reloadCuration],
-  )
-
-  const handleFeatureSubmission = useCallback(
-    async (submissionId: string, title: string, description?: string) => {
-      await featureSubmission({ submissionId, title, description })
-      await reloadCuration()
-      try {
-        const templates = await listFeaturedTemplates()
-        setFeaturedTemplates(templates)
-      } catch {
-        setFeaturedTemplates([])
-      }
-    },
-    [reloadCuration],
-  )
 
   const handlePrevMonth = useCallback(() => {
     setMonthKey((prev) => shiftMonthKey(prev, -1))
@@ -313,6 +237,12 @@ function App() {
     setMonthKey(currentMonthKey)
   }, [currentMonthKey])
 
+  const handleJumpToDate = useCallback((dateKey: string) => {
+    setEntryDateKey(dateKey)
+    setMonthKey(toMonthKey(dateKey))
+    setActivePage('today')
+  }, [])
+
   const activeContent = useMemo(() => {
     if (activePage === 'month') {
       return (
@@ -325,6 +255,7 @@ function App() {
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
           onBackCurrentMonth={handleBackCurrentMonth}
+          onJumpToDate={handleJumpToDate}
         />
       )
     }
@@ -339,9 +270,10 @@ function App() {
           onInstallApp={handleInstallApp}
           onSignIn={handleSignIn}
           onSignOut={handleSignOut}
-          onSync={handleCloudSync}
+          onSync={handleCloudSyncWithReload}
           onRefreshAuth={refreshAuth}
           onExport={handleExportLocal}
+          onImport={handleImportLocal}
           onClearLocal={handleClearLocal}
           mySubmissions={mySubmissions}
           reviewQueue={reviewQueue}
@@ -353,12 +285,18 @@ function App() {
       )
     }
     if (activePage === 'featured') {
-      return <FeaturedPage templates={featuredTemplates} />
+      return (
+        <FeaturedPage
+          templates={featuredTemplates}
+          hasMore={hasMore}
+          onLoadMore={loadMoreFeatured}
+        />
+      )
     }
     return (
       <TodayPage
         dateKey={entryDateKey}
-        minDateKey={EARLIEST_DATE_KEY}
+        minDateKey={earliestDateKey}
         maxDateKey={todayKey}
         dateLabel={formatCnDate(entryDateKey)}
         entry={todayEntry}
@@ -373,7 +311,7 @@ function App() {
     activePage,
     authSummary,
     handleInstallApp,
-    handleCloudSync,
+    handleCloudSyncWithReload,
     handleBackCurrentMonth,
     handleClearLocal,
     handleExportLocal,
@@ -394,6 +332,11 @@ function App() {
     currentMonthKey,
     todayEntry,
     todayKey,
+    earliestDateKey,
+    hasMore,
+    loadMoreFeatured,
+    handleImportLocal,
+    handleJumpToDate,
     featuredTemplates,
     mySubmissions,
     reviewQueue,
@@ -425,7 +368,9 @@ function App() {
         ))}
       </nav>
 
-      <main className="main-content">{activeContent}</main>
+      <main className="main-content">
+        <ErrorBoundary>{activeContent}</ErrorBoundary>
+      </main>
     </div>
   )
 }

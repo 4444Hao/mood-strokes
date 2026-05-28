@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import { ThreeStrokeMoodEditor } from '../components/ThreeStrokeMoodEditor'
 import type { AuthSummary } from '../lib/cloudSync'
@@ -91,7 +91,18 @@ export function TodayPage({
   const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
   const [overwriteConfirmOpen, setOverwriteConfirmOpen] = useState(false)
+  const [templateConfirmFace, setTemplateConfirmFace] = useState<MoodFace | null>(null)
+  const [undoEntry, setUndoEntry] = useState<MoodEntry | null>(null)
+  const undoRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notePrompt = promptForDate(dateKey)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     setNote(entry?.note ?? '')
@@ -107,18 +118,39 @@ export function TodayPage({
     if (!face || saveBusy) {
       return
     }
+    const previous = entry
     setSaveBusy(true)
     setSaveDone(false)
     setSavedHint('')
+    setUndoEntry(null)
+    if (undoRef.current) clearTimeout(undoRef.current)
     try {
       onSave(note, face)
+      if (previous) {
+        setUndoEntry(previous)
+        undoRef.current = window.setTimeout(() => {
+          setUndoEntry(null)
+          undoRef.current = null
+        }, 30000)
+      }
       setSavedHint(entry ? '已覆盖今天这张。' : '今天的脸已经收好了。')
       setSaveDone(true)
-      window.setTimeout(() => setSaveDone(false), 1400)
+      window.setTimeout(() => { if (mountedRef.current) setSaveDone(false) }, 1400)
     } finally {
-      window.setTimeout(() => setSaveBusy(false), 260)
+      window.setTimeout(() => { if (mountedRef.current) setSaveBusy(false) }, 260)
       setOverwriteConfirmOpen(false)
     }
+  }
+
+  const handleUndoSave = () => {
+    if (!undoEntry) return
+    onSave(undoEntry.note ?? '', undoEntry.face)
+    setUndoEntry(null)
+    if (undoRef.current) {
+      clearTimeout(undoRef.current)
+      undoRef.current = null
+    }
+    setSavedHint('已撤销保存，恢复为之前的内容。')
   }
 
   const handleSave = () => {
@@ -135,6 +167,10 @@ export function TodayPage({
   const handleSubmit = async () => {
     if (!face) {
       setSubmitHint('先画好今天的脸，再上传到精选池。')
+      return
+    }
+    if (!navigator.onLine) {
+      setSubmitHint('当前处于离线状态，请连接网络后再投稿。')
       return
     }
     if (!auth.configured) {
@@ -165,7 +201,7 @@ export function TodayPage({
       })
       setSubmitHint('投稿已提交。你可以在设置页查看审核状态。')
       setSubmitDone(true)
-      window.setTimeout(() => setSubmitDone(false), 1600)
+      window.setTimeout(() => { if (mountedRef.current) setSubmitDone(false) }, 1600)
     } catch (error) {
       const message = error instanceof Error ? error.message : '投稿失败，请稍后再试。'
       setSubmitHint(message)
@@ -203,12 +239,40 @@ export function TodayPage({
                 key={template.id}
                 type="button"
                 className="template-card"
-                onClick={() => setFace(template.face)}
+                onClick={() => {
+                  if (face) {
+                    setTemplateConfirmFace(template.face)
+                  } else {
+                    setFace(template.face)
+                  }
+                }}
               >
                 <MoodFaceSvg face={template.face} className="template-face" />
                 <span className="template-title">{template.title}</span>
               </button>
             ))}
+          </div>
+        </div>
+      ) : null}
+
+      {templateConfirmFace ? (
+        <div className="block save-choice-card" role="group" aria-label="模板替换确认">
+          <p className="block-title">是否使用模板开始？</p>
+          <p className="block-note">当前已绘制的表情将被替换为模板内容。</p>
+          <div className="settings-actions">
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => {
+                setFace(templateConfirmFace)
+                setTemplateConfirmFace(null)
+              }}
+            >
+              确认替换
+            </button>
+            <button type="button" className="ghost-btn warn" onClick={() => setTemplateConfirmFace(null)}>
+              取消
+            </button>
           </div>
         </div>
       ) : null}
@@ -320,6 +384,15 @@ export function TodayPage({
       </div>
 
       {savedHint ? <p className="saved-hint">{savedHint}</p> : null}
+
+      {undoEntry ? (
+        <div className="settings-actions">
+          <button type="button" className="ghost-btn" onClick={handleUndoSave}>
+            撤销本次保存
+          </button>
+          <span className="editor-hint">（30 秒内可撤销）</span>
+        </div>
+      ) : null}
     </section>
   )
 }

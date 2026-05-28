@@ -157,20 +157,21 @@ export async function getCurationAuthSummary(): Promise<CurationAuthSummary> {
   }
 }
 
-export async function listFeaturedTemplates(limit = 12): Promise<FeaturedTemplate[]> {
+export async function listFeaturedTemplates(limit = 12, offset = 0): Promise<FeaturedTemplate[]> {
   ensureConfigured()
   const client = getSupabaseClient()
   if (!client) {
     throw new Error('Supabase 客户端未初始化。')
   }
 
-  let rows: FeaturedTemplateRow[] = []
+  let rows: FeaturedTemplateRow[]
   {
     const withAnonymous = await client
       .from(FEATURED_TEMPLATES_TABLE)
       .select('id,source_submission_id,created_by,title,description,face,note,is_anonymous,is_active,created_at')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
       .limit(limit)
     if (withAnonymous.error && withAnonymous.error.message.includes('is_anonymous')) {
       const fallback = await client
@@ -178,6 +179,7 @@ export async function listFeaturedTemplates(limit = 12): Promise<FeaturedTemplat
         .select('id,source_submission_id,created_by,title,description,face,note,is_active,created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
         .limit(limit)
       if (fallback.error) {
         throw new Error(fallback.error.message)
@@ -432,51 +434,25 @@ export async function featureSubmission(params: {
     throw new Error('Supabase 客户端未初始化。')
   }
 
-  const { data: submission, error: fetchError } = await client
-    .from(MOOD_SUBMISSIONS_TABLE)
-    .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,is_anonymous,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
-    .eq('id', params.submissionId)
-    .single()
+  const { error } = await client.rpc('feature_submission', {
+    p_submission_id: params.submissionId,
+    p_admin_id: admin.id,
+    p_title: params.title.trim(),
+    p_description: params.description?.trim() || null,
+  })
 
-  if (fetchError) {
-    throw new Error(fetchError.message)
-  }
-
-  const row = submission as SubmissionRow
-  if (!row.consent_template) {
-    throw new Error('该投稿未授权作为模板，无法入选。')
-  }
-
-  const { error: insertError } = await client
-    .from(FEATURED_TEMPLATES_TABLE)
-    .insert({
-      source_submission_id: row.id,
-      created_by: admin.id,
-      title: params.title.trim() || '今日精选',
-      description: params.description?.trim() || null,
-      face: row.face,
-      note: row.note,
-      is_anonymous: Boolean(row.is_anonymous),
-      is_active: true,
-    })
-
-  if (insertError) {
-    throw new Error(insertError.message)
-  }
-
-  const { error: updateError } = await client
-    .from(MOOD_SUBMISSIONS_TABLE)
-    .update({
-      status: 'featured',
-      review_comment: '已入选模板库，感谢你的投稿。',
-      reviewed_by: admin.id,
-      reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', row.id)
-
-  if (updateError) {
-    throw new Error(updateError.message)
+  if (error) {
+    const message = error.message.toLowerCase()
+    if (message.includes('feature_submission')) {
+      throw new Error('数据库尚未启用入选模板函数。请先执行最新的 Supabase 迁移 SQL。')
+    }
+    if (message.includes('未授权作为模板')) {
+      throw new Error('该投稿未授权作为模板，无法入选。')
+    }
+    if (message.includes('不是管理员')) {
+      throw new Error('当前账号不是管理员，无法进行精选审核。')
+    }
+    throw new Error(error.message)
   }
 }
 
