@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import {
   EMAIL_SIGNIN_COOLDOWN_SECONDS,
-  getAuthRedirectTarget,
   getEmailSignInCooldownSeconds,
   type AuthSummary,
   type SyncMeta,
@@ -83,8 +82,6 @@ export function SettingsPage(props: SettingsPageProps) {
   const [dialogBusy, setDialogBusy] = useState(false)
   const [showSubmissions, setShowSubmissions] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
-
-  const redirectTarget = getAuthRedirectTarget()
 
   useEffect(() => {
     setEmailCooldown(getEmailSignInCooldownSeconds())
