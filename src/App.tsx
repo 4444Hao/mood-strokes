@@ -4,10 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { useCuration } from './hooks/useCuration'
 import type { SyncMode } from './lib/cloudSync'
 import {
-  compareMonthKey,
   formatCnDate,
-  formatCnMonth,
-  shiftMonthKey,
   toDateKey,
   toMonthKey,
 } from './lib/date'
@@ -15,7 +12,6 @@ import {
   listEntriesByMonth,
   saveOrUpdateEntry,
   getEntryByDate,
-  getEarliestDateKey,
   clearAllEntries,
   exportEntriesPayload,
   importEntriesPayload,
@@ -23,13 +19,12 @@ import {
   type StorageStats,
 } from './lib/storage'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { MonthPage } from './pages/MonthPage'
 import { FeaturedPage } from './pages/FeaturedPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import type { MoodEntry, MoodFace } from './types/mood'
 
-type PageId = 'today' | 'month' | 'featured' | 'settings'
+type PageId = 'today' | 'featured' | 'settings'
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
@@ -42,30 +37,25 @@ type PageTab = {
 
 const PAGE_TABS: PageTab[] = [
   { id: 'today', label: '今日' },
-  { id: 'month', label: '月历' },
   { id: 'featured', label: '精选' },
   { id: 'settings', label: '设置' },
 ]
 
-const FALLBACK_EARLIEST_DATE = '2026-05-01'
-
 function hashToPage(hash: string): PageId | null {
   const page = hash.replace(/^#/, '')
-  if (page === 'today' || page === 'month' || page === 'featured' || page === 'settings') {
+  if (page === 'today' || page === 'featured' || page === 'settings') {
     return page
   }
   return null
 }
 
 function App() {
-  const earliestDateKey = getEarliestDateKey() ?? FALLBACK_EARLIEST_DATE
   const [activePage, setActivePage] = useState<PageId>(
     () => hashToPage(window.location.hash) ?? 'today',
   )
   const todayKey = toDateKey(new Date())
   const [entryDateKey, setEntryDateKey] = useState(todayKey)
-  const currentMonthKey = toMonthKey(todayKey)
-  const [monthKey, setMonthKey] = useState(currentMonthKey)
+  const [monthKey, setMonthKey] = useState(toMonthKey(todayKey))
   const [todayEntry, setTodayEntry] = useState<MoodEntry | undefined>(undefined)
   const [monthEntries, setMonthEntries] = useState<MoodEntry[]>([])
   const [storageStats, setStorageStats] = useState<StorageStats>({
@@ -171,6 +161,10 @@ function App() {
     setMonthKey(toMonthKey(nextDateKey))
   }, [])
 
+  const handleMonthChange = useCallback((nextMonthKey: string) => {
+    setMonthKey(nextMonthKey)
+  }, [])
+
   const handleClearLocal = useCallback(() => {
     clearAllEntries()
     reloadEntries()
@@ -219,46 +213,7 @@ function App() {
     return false
   }, [installPromptEvent])
 
-  const handlePrevMonth = useCallback(() => {
-    setMonthKey((prev) => shiftMonthKey(prev, -1))
-  }, [])
-
-  const handleNextMonth = useCallback(() => {
-    setMonthKey((prev) => {
-      const next = shiftMonthKey(prev, 1)
-      if (compareMonthKey(next, currentMonthKey) > 0) {
-        return prev
-      }
-      return next
-    })
-  }, [currentMonthKey])
-
-  const handleBackCurrentMonth = useCallback(() => {
-    setMonthKey(currentMonthKey)
-  }, [currentMonthKey])
-
-  const handleJumpToDate = useCallback((dateKey: string) => {
-    setEntryDateKey(dateKey)
-    setMonthKey(toMonthKey(dateKey))
-    setActivePage('today')
-  }, [])
-
   const activeContent = useMemo(() => {
-    if (activePage === 'month') {
-      return (
-        <MonthPage
-          monthLabel={formatCnMonth(monthKey)}
-          monthKey={monthKey}
-          entries={monthEntries}
-          canGoNext={compareMonthKey(monthKey, currentMonthKey) < 0}
-          isCurrentMonth={compareMonthKey(monthKey, currentMonthKey) === 0}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          onBackCurrentMonth={handleBackCurrentMonth}
-          onJumpToDate={handleJumpToDate}
-        />
-      )
-    }
     if (activePage === 'settings') {
       return (
         <SettingsPage
@@ -296,13 +251,15 @@ function App() {
     return (
       <TodayPage
         dateKey={entryDateKey}
-        minDateKey={earliestDateKey}
-        maxDateKey={todayKey}
+        todayKey={todayKey}
+        monthKey={monthKey}
         dateLabel={formatCnDate(entryDateKey)}
         entry={todayEntry}
+        monthEntries={monthEntries}
         auth={authSummary}
         featuredTemplates={featuredTemplates}
         onDateChange={handleEntryDateChange}
+        onMonthChange={handleMonthChange}
         onSave={handleSaveToday}
         onSubmitMood={handleSubmitMood}
       />
@@ -312,15 +269,13 @@ function App() {
     authSummary,
     handleInstallApp,
     handleCloudSyncWithReload,
-    handleBackCurrentMonth,
     handleClearLocal,
     handleExportLocal,
-    handleNextMonth,
-    handlePrevMonth,
     handleSignIn,
     handleSignOut,
     handleSaveToday,
     handleEntryDateChange,
+    handleMonthChange,
     refreshAuth,
     entryDateKey,
     installPromptEvent,
@@ -329,14 +284,11 @@ function App() {
     monthKey,
     syncMeta,
     storageStats,
-    currentMonthKey,
     todayEntry,
     todayKey,
-    earliestDateKey,
     hasMore,
     loadMoreFeatured,
     handleImportLocal,
-    handleJumpToDate,
     featuredTemplates,
     mySubmissions,
     reviewQueue,

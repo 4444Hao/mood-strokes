@@ -613,6 +613,106 @@
   background: rgba(255, 251, 244, 0.7);
 }
 
+/* ── 热力图 ── */
+
+.heatmap {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.65rem 0.7rem;
+  background: rgba(255, 251, 244, 0.72);
+}
+
+.heatmap-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.heatmap-month-label {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  min-width: 6rem;
+  text-align: center;
+}
+
+.heatmap-month-btn {
+  padding: 0.28rem 0.55rem !important;
+  font-size: 0.8rem !important;
+}
+
+.heatmap-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmap-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.heatmap-day-label {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  aspect-ratio: unset;
+  padding-bottom: 2px;
+}
+
+.heatmap-empty {
+  background: transparent;
+}
+
+.heatmap-dot {
+  appearance: none;
+  border: 1px solid transparent;
+  background: rgba(225, 212, 195, 0.35);
+  color: var(--ink-soft);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 150ms ease;
+  line-height: 1;
+}
+
+.heatmap-dot.has-record {
+  background: rgba(173, 140, 108, 0.32);
+  color: var(--ink);
+  font-weight: 600;
+  border-color: rgba(147, 111, 74, 0.2);
+}
+
+.heatmap-dot.is-selected {
+  background: var(--accent);
+  border-color: var(--accent-strong);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px rgba(190, 147, 101, 0.3);
+  transform: scale(1.05);
+}
+
+.heatmap-dot.is-today {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.heatmap-dot:hover {
+  transform: scale(1.08);
+}
+
+.heatmap-dot-inner {
+  pointer-events: none;
+}
+
 /* ── 挂历 · 翻本子 ── */
 
 .hanger-book {
@@ -747,11 +847,18 @@
   cursor: e-resize;
 }
 
+.hanger-book-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
 .hanger-book-page-num {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.8rem;
-  text-align: center;
   opacity: 0.7;
 }
 
@@ -761,45 +868,6 @@
   gap: 0.45rem;
 }
 
-/* ── 旧月历保留样式 ── */
-
-.month-hanger {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 0.9rem;
-  background: rgba(255, 251, 244, 0.7);
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
-
-.month-hanger-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.month-hanger-date {
-  margin: 0;
-  color: var(--ink-soft);
-  text-align: center;
-}
-
-.month-hanger-sheet {
-  border: 1px solid rgba(126, 96, 69, 0.24);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.26)),
-    rgba(255, 249, 241, 0.78);
-  padding: 0.8rem;
-}
-
-.month-hanger-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
 
 
 .month-detail-title {
