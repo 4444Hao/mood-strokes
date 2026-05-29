@@ -134,14 +134,6 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-function getRedirectTarget(): string {
-  const byEnv = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim()
-  if (byEnv) {
-    return byEnv
-  }
-  return window.location.origin
-}
-
 function getCooldownRemainingSeconds(): number {
   const meta = readMagicLinkMeta()
   if (!meta.lastSentAt) {
@@ -187,10 +179,6 @@ function setLastSync(mode: SyncMode): string {
 
 export function getSyncMeta(): SyncMeta {
   return readSyncMeta()
-}
-
-export function getAuthRedirectTarget(): string {
-  return getRedirectTarget()
 }
 
 export function getEmailSignInCooldownSeconds(): number {
@@ -306,7 +294,7 @@ export async function signInWithEmail(email: string): Promise<void> {
   }
   const cooldown = getCooldownRemainingSeconds()
   if (cooldown > 0) {
-    throw new Error(`刚发送过登录链接，请 ${cooldown} 秒后再试。`)
+    throw new Error(`刚发送过验证码，请 ${cooldown} 秒后再试。`)
   }
   const client = getSupabaseClient()
   if (!client) {
@@ -315,7 +303,6 @@ export async function signInWithEmail(email: string): Promise<void> {
   const { error } = await client.auth.signInWithOtp({
     email: normalized,
     options: {
-      emailRedirectTo: getRedirectTarget(),
       shouldCreateUser: true,
     },
   })
@@ -325,6 +312,30 @@ export async function signInWithEmail(email: string): Promise<void> {
   writeMagicLinkMeta({
     lastSentAt: new Date().toISOString(),
   })
+}
+
+export async function verifyOtp(email: string, token: string): Promise<void> {
+  ensureConfigured()
+  const normalized = normalizeEmail(email)
+  const cleanToken = token.trim()
+  if (!cleanToken || cleanToken.length !== 6) {
+    throw new Error('请输入 6 位验证码。')
+  }
+  const client = getSupabaseClient()
+  if (!client) {
+    throw new Error('Supabase 客户端未初始化。')
+  }
+  const { error } = await client.auth.verifyOtp({
+    email: normalized,
+    token: cleanToken,
+    type: 'email',
+  })
+  if (error) {
+    if (error.message.toLowerCase().includes('invalid') || error.message.toLowerCase().includes('expired')) {
+      throw new Error('验证码错误或已过期，请重新发送。')
+    }
+    throw new Error(error.message)
+  }
 }
 
 export async function updateDisplayName(displayName: string): Promise<void> {

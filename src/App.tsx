@@ -91,6 +91,7 @@ function App() {
     displayName,
     refreshAuth,
     handleSignIn,
+    handleVerifyOtp,
     handleSignOut,
     handleCloudSync,
     handleUpdateDisplayName,
@@ -243,6 +244,7 @@ function App() {
           isInstalled={isInstalled}
           onInstallApp={handleInstallApp}
           onSignIn={handleSignIn}
+          onVerifyOtp={handleVerifyOtp}
           onSignOut={handleSignOut}
           onSync={handleCloudSyncWithReload}
           onRefreshAuth={refreshAuth}
@@ -288,6 +290,7 @@ function App() {
     handleClearLocal,
     handleExportLocal,
     handleSignIn,
+    handleVerifyOtp,
     handleSignOut,
     handleSaveToday,
     handleEntryDateChange,

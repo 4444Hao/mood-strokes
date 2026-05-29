@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import {
   EMAIL_SIGNIN_COOLDOWN_SECONDS,
-  getAuthRedirectTarget,
   getEmailSignInCooldownSeconds,
   type AuthSummary,
   type SyncMeta,
@@ -22,6 +21,7 @@ type SettingsPageProps = {
   isInstalled: boolean
   onInstallApp: () => Promise<boolean>
   onSignIn: (email: string) => Promise<void>
+  onVerifyOtp: (email: string, token: string) => Promise<void>
   onSignOut: () => Promise<void>
   onSync: (mode: SyncMode) => Promise<SyncSummary>
   onRefreshAuth: () => Promise<void>
@@ -68,7 +68,7 @@ function statusDot(s: MoodSubmission['status']): string {
 export function SettingsPage(props: SettingsPageProps) {
   const {
     stats, auth, syncMeta, canInstallPrompt, isInstalled,
-    onInstallApp, onSignIn, onSignOut, onSync, onRefreshAuth,
+    onInstallApp, onSignIn, onVerifyOtp, onSignOut, onSync, onRefreshAuth,
     displayName, onUpdateDisplayName,
     onExport, onImport, onClearLocal,
     mySubmissions, reviewQueue,
@@ -86,7 +86,9 @@ export function SettingsPage(props: SettingsPageProps) {
   const [dialogBusy, setDialogBusy] = useState(false)
   const [showSubmissions, setShowSubmissions] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
-  const redirectTarget = getAuthRedirectTarget()
+  const [otpEmail, setOtpEmail] = useState('')
+  const [otpToken, setOtpToken] = useState('')
+  const [otpBusy, setOtpBusy] = useState(false)
 
   useEffect(() => {
     setEmailCooldown(getEmailSignInCooldownSeconds())
@@ -140,10 +142,25 @@ export function SettingsPage(props: SettingsPageProps) {
       setBusyAction('signin')
       await onSignIn(clean)
       setEmailCooldown(EMAIL_SIGNIN_COOLDOWN_SECONDS)
-      showToast('登录链接已发送，请检查邮箱。')
+      setOtpEmail(clean)
+      setOtpToken('')
+      showToast('验证码已发送，请检查邮箱。')
     } catch (e) {
       showToast(e instanceof Error ? e.message : '登录请求失败。')
     } finally { setBusyAction(null) }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!otpToken.trim()) { showToast('请输入 6 位验证码。'); return }
+    try {
+      setOtpBusy(true)
+      await onVerifyOtp(otpEmail, otpToken)
+      setOtpEmail('')
+      setOtpToken('')
+      showToast('登录成功。')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : '验证失败。')
+    } finally { setOtpBusy(false) }
   }
 
   const handleSignOut = async () => {
@@ -315,19 +332,35 @@ export function SettingsPage(props: SettingsPageProps) {
                 </div>
               </>
             ) : (
-              <div className="settings-auth-signin">
-                <input className="settings-input" type="email" placeholder="邮箱以接收登录链接" value={email}
-                  onChange={(e) => setEmail(e.target.value)} />
-                <button type="button" className="ghost-btn" onClick={handleSignIn}
-                  disabled={isBusy || emailCooldown > 0}>
-                  {emailCooldown > 0 ? `稍候 ${emailCooldown}s` : '发送登录链接'}
-                </button>
-              </div>
+              <>
+                <div className="settings-auth-signin">
+                  <input className="settings-input" type="email" placeholder="邮箱以接收验证码" value={email}
+                    onChange={(e) => setEmail(e.target.value)} />
+                  <button type="button" className="ghost-btn" onClick={handleSignIn}
+                    disabled={isBusy || emailCooldown > 0}>
+                    {emailCooldown > 0 ? `稍候 ${emailCooldown}s` : '发送验证码'}
+                  </button>
+                </div>
+
+                {otpEmail && (
+                  <div className="settings-auth-signin">
+                    <input className="settings-input" type="text" inputMode="numeric" maxLength={6}
+                      placeholder="输入 6 位验证码" value={otpToken}
+                      onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ''))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp() }}
+                      autoFocus />
+                    <button type="button" className="ghost-btn" onClick={handleVerifyOtp}
+                      disabled={otpBusy || otpToken.length !== 6}>
+                      {otpBusy ? '验证中...' : '验证'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {!auth.signedIn && (
               <p className="settings-note">
-                登录链接将跳转到：{redirectTarget}
+                邮件中包含 6 位验证码（也附带备用登录链接）。在当前浏览器输入验证码即可登录，无需跳转。
               </p>
             )}
           </>

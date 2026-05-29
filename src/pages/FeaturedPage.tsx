@@ -33,14 +33,12 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
 
   const [pageIdx, setPageIdx] = useState(0)
   const [flipDir, setFlipDir] = useState<'left' | 'right' | null>(null)
-  const [flipKey, setFlipKey] = useState(0)
   const totalPages = pages.length
   const page = pages[pageIdx] ?? []
   const layout = layoutForPage(pageIdx)
 
   const triggerFlip = useCallback((dir: 'left' | 'right') => {
     setFlipDir(dir)
-    setFlipKey((k) => k + 1)
     window.setTimeout(() => setFlipDir(null), 320)
   }, [])
 
@@ -84,7 +82,7 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
       <div className="folio-book">
         <div className="folio-book-spine" aria-hidden />
 
-        <article key={flipKey} className={`folio-leaf ${flipClass} folio-${layout}`}>
+        <article className={`folio-leaf ${flipClass} folio-${layout}`}>
           <div className="folio-edge prev" onClick={() => goTo('prev')} aria-label="上一页" />
           <div className="folio-edge next" onClick={() => goTo('next')} aria-label="下一页" />
 

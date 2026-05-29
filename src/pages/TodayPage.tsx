@@ -65,7 +65,6 @@ export function TodayPage({
   const [undoEntry, setUndoEntry] = useState<MoodEntry | null>(null)
   const [foldSection, setFoldSection] = useState<FoldSection>(null)
   const [flipDir, setFlipDir] = useState<'left' | 'right' | null>(null)
-  const [flipKey, setFlipKey] = useState(0)
   const [submitBusy, setSubmitBusy] = useState(false)
   const [shareBlob, setShareBlob] = useState<Blob | null>(null)
   const [shareBusy, setShareBusy] = useState(false)
@@ -112,7 +111,6 @@ export function TodayPage({
 
   const triggerFlip = useCallback((dir: 'left' | 'right') => {
     setFlipDir(dir)
-    setFlipKey((k) => k + 1)
     window.setTimeout(() => setFlipDir(null), 280)
   }, [])
 
@@ -259,7 +257,7 @@ export function TodayPage({
         <div className="canvas-book-stack" aria-hidden />
         <div className="canvas-book-stack" aria-hidden />
 
-        <article key={flipKey} className={`canvas-book-leaf ${flipClass}`}>
+        <article className={`canvas-book-leaf ${flipClass}`}>
           <div className="canvas-book-edge prev" onClick={() => flipTo('prev')} aria-label="翻到上一天" />
           <div className="canvas-book-edge next" onClick={() => flipTo('next')} aria-label="翻到下一天" />
 

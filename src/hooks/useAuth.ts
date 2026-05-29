@@ -7,6 +7,7 @@ import {
   signOutCloud,
   syncWithCloud,
   updateDisplayName,
+  verifyOtp,
   type AuthSummary,
   type SyncMeta,
   type SyncMode,
@@ -50,6 +51,11 @@ export function useAuth() {
     await signInWithEmail(email)
   }, [])
 
+  const handleVerifyOtp = useCallback(async (email: string, token: string) => {
+    await verifyOtp(email, token)
+    await refreshAuth()
+  }, [refreshAuth])
+
   const handleSignOut = useCallback(async () => {
     await signOutCloud()
     await refreshAuth()
@@ -68,6 +74,7 @@ export function useAuth() {
     displayName,
     refreshAuth,
     handleSignIn,
+    handleVerifyOtp,
     handleSignOut,
     handleCloudSync,
     handleUpdateDisplayName,
