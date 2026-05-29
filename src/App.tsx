@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import './App.css'
 import { useAuth } from './hooks/useAuth'
 import { useCuration } from './hooks/useCuration'
@@ -50,6 +51,19 @@ function hashToPage(hash: string): PageId | null {
 }
 
 function App() {
+  const [showUpdate, setShowUpdate] = useState(false)
+
+  const {
+    updateServiceWorker,
+  } = useRegisterSW({
+    onNeedRefresh() {
+      setShowUpdate(true)
+    },
+    onOfflineReady() {
+      // first-time offline ready — silent
+    },
+  })
+
   const [activePage, setActivePage] = useState<PageId>(
     () => hashToPage(window.location.hash) ?? 'today',
   )
@@ -103,8 +117,13 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const hash = window.location.hash
+    // 保留 Supabase auth 回调的 hash（含 access_token），不要覆盖
+    if (hash.includes('access_token') || hash.includes('error_description')) {
+      return
+    }
     const target = `#${activePage}`
-    if (window.location.hash !== target) {
+    if (hash !== target) {
       window.history.replaceState(null, '', target)
     }
   }, [activePage])
@@ -317,6 +336,15 @@ function App() {
       <main className="main-content">
         <ErrorBoundary>{activeContent}</ErrorBoundary>
       </main>
+
+      {showUpdate && (
+        <div className="update-toast">
+          <span>有新版本可用</span>
+          <button type="button" className="mini-chip" onClick={() => { updateServiceWorker(); setShowUpdate(false) }}>
+            立即更新
+          </button>
+        </div>
+      )}
     </div>
   )
 }

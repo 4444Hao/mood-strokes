@@ -15,6 +15,26 @@
   box-shadow: 0 12px 36px rgba(78, 51, 31, 0.08);
 }
 
+/* ── 版本更新提示 ── */
+
+.update-toast {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent-strong);
+  border-radius: 999px;
+  background: rgba(255, 251, 244, 0.95);
+  box-shadow: 0 4px 16px rgba(78, 51, 31, 0.15);
+  font-size: 0.9rem;
+  animation: reveal 300ms ease;
+}
+
 /* ── 紧凑顶栏 ── */
 
 .app-bar {

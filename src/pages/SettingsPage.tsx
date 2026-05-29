@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import {
   EMAIL_SIGNIN_COOLDOWN_SECONDS,
+  getAuthRedirectTarget,
   getEmailSignInCooldownSeconds,
   type AuthSummary,
   type SyncMeta,
@@ -85,6 +86,7 @@ export function SettingsPage(props: SettingsPageProps) {
   const [dialogBusy, setDialogBusy] = useState(false)
   const [showSubmissions, setShowSubmissions] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
+  const redirectTarget = getAuthRedirectTarget()
 
   useEffect(() => {
     setEmailCooldown(getEmailSignInCooldownSeconds())
@@ -325,7 +327,7 @@ export function SettingsPage(props: SettingsPageProps) {
 
             {!auth.signedIn && (
               <p className="settings-note">
-                邮箱会提供登录链接，点击即可。
+                登录链接将跳转到：{redirectTarget}
               </p>
             )}
           </>
