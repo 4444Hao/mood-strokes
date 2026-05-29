@@ -10,7 +10,7 @@ import { getSupabaseClient, isSupabaseConfigured, MOOD_ENTRIES_TABLE, PROFILES_T
 
 const SYNC_META_KEY = 'three-line-mood.sync-meta.v1'
 const MAGIC_LINK_META_KEY = 'three-line-mood.magic-link-meta.v1'
-export const EMAIL_SIGNIN_COOLDOWN_SECONDS = 60
+export const EMAIL_SIGNIN_COOLDOWN_SECONDS = 90
 
 type MagicLinkMeta = {
   lastSentAt?: string
@@ -162,7 +162,7 @@ function getCooldownRemainingSeconds(): number {
 function mapSignInErrorMessage(raw: string): string {
   const lower = raw.toLowerCase()
   if (lower.includes('for security purposes') || lower.includes('rate limit')) {
-    return '发送太频繁了，请稍等一分钟再试。'
+    return '发送太频繁了，请稍等 90 秒再试。同一邮箱每小时最多发送 30 次。'
   }
   if (lower.includes('email rate limit exceeded')) {
     return '当前邮箱发送频率受限，请稍后再试。'
