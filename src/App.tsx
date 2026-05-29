@@ -74,10 +74,12 @@ function App() {
   const {
     authSummary,
     syncMeta,
+    displayName,
     refreshAuth,
     handleSignIn,
     handleSignOut,
     handleCloudSync,
+    handleUpdateDisplayName,
   } = useAuth()
 
   const {
@@ -225,6 +227,8 @@ function App() {
           onSignOut={handleSignOut}
           onSync={handleCloudSyncWithReload}
           onRefreshAuth={refreshAuth}
+          displayName={displayName}
+          onUpdateDisplayName={handleUpdateDisplayName}
           onExport={handleExportLocal}
           onImport={handleImportLocal}
           onClearLocal={handleClearLocal}
@@ -278,6 +282,8 @@ function App() {
     storageStats,
     todayEntry,
     todayKey,
+    displayName,
+    handleUpdateDisplayName,
     handleImportLocal,
     featuredTemplates,
     mySubmissions,

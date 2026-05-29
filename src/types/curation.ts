@@ -12,6 +12,7 @@ export type SubmissionStatus =
 export type MoodSubmission = {
   id: string
   userId: string
+  authorDisplayName?: string
   entryDate: string
   face: MoodFace
   note?: string

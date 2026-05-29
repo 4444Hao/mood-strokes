@@ -67,6 +67,12 @@ export function useCuration(auth: AuthSummary) {
     async (submissionId: string) => {
       await withdrawSubmission(submissionId)
       await reloadCuration()
+      try {
+        const templates = await listFeaturedTemplates()
+        setFeaturedTemplates(templates)
+      } catch {
+        setFeaturedTemplates([])
+      }
     },
     [reloadCuration],
   )

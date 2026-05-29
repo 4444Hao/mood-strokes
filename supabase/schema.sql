@@ -36,10 +36,14 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   email text null,
+  display_name text null,
   role text not null default 'user' check (role in ('user', 'admin')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+add column if not exists display_name text null;
 
 alter table public.profiles enable row level security;
 
@@ -93,6 +97,11 @@ create policy "users_can_update_own_profile"
 on public.profiles
 for update
 using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "users_can_upsert_own_profile"
+on public.profiles
+for insert
 with check (auth.uid() = user_id and role = 'user');
 
 create policy "admins_can_manage_profiles"

@@ -327,6 +327,32 @@ export async function signInWithEmail(email: string): Promise<void> {
   })
 }
 
+export async function updateDisplayName(displayName: string): Promise<void> {
+  const session = await requireSession()
+  const client = getSupabaseClient()
+  if (!client) throw new Error('Supabase 客户端未初始化。')
+  const trimmed = displayName.trim()
+  if (trimmed && trimmed.length > 20) throw new Error('昵称不能超过 20 个字符。')
+  const { error } = await client
+    .from(PROFILES_TABLE)
+    .upsert({ user_id: session.user.id, display_name: trimmed || null }, { onConflict: 'user_id' })
+  if (error) throw new Error(error.message)
+}
+
+export async function getDisplayName(): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null
+  const client = getSupabaseClient()
+  if (!client) return null
+  const { data } = await client.auth.getSession()
+  if (!data.session) return null
+  const { data: profile } = await client
+    .from(PROFILES_TABLE)
+    .select('display_name')
+    .eq('user_id', data.session.user.id)
+    .maybeSingle()
+  return profile?.display_name || null
+}
+
 export async function signOutCloud(): Promise<void> {
   ensureConfigured()
   const client = getSupabaseClient()

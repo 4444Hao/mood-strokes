@@ -456,7 +456,7 @@
 .canvas-book-edge {
   position: absolute;
   top: 0;
-  bottom: 0;
+  height: 62%;
   width: 16%;
   z-index: 4;
   cursor: pointer;
@@ -468,6 +468,17 @@
 
 .canvas-book-edge.next {
   right: 0;
+}
+
+/* 编辑器按钮区置于边缘区之上，避免误触翻页 */
+.three-actions {
+  position: relative;
+  z-index: 5;
+}
+
+.three-editor p.editor-hint {
+  position: relative;
+  z-index: 5;
 }
 
 .canvas-book-page-num {

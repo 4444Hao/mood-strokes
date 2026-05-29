@@ -309,7 +309,8 @@ export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
     throw new Error(error.message)
   }
 
-  return ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+  const submissions = ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+  return attachDisplayNames(submissions)
 }
 
 export async function withdrawSubmission(submissionId: string): Promise<void> {
@@ -356,6 +357,27 @@ async function requireAdminUser(): Promise<{ id: string }> {
   return { id: user.id }
 }
 
+async function attachDisplayNames(submissions: MoodSubmission[]): Promise<MoodSubmission[]> {
+  if (submissions.length === 0) return submissions
+  const userIds = Array.from(new Set(submissions.map((s) => s.userId)))
+  const client = getSupabaseClient()
+  if (!client) return submissions
+  const nameMap = new Map<string, string>()
+  try {
+    const { data } = await client
+      .from(PROFILES_TABLE)
+      .select('user_id,display_name')
+      .in('user_id', userIds)
+    ;((data ?? []) as ProfileNameRow[]).forEach((row) => {
+      if (row.display_name?.trim()) nameMap.set(row.user_id, row.display_name.trim())
+    })
+  } catch { /* ignore */ }
+  return submissions.map((s) => ({
+    ...s,
+    authorDisplayName: nameMap.get(s.userId),
+  }))
+}
+
 export async function listReviewQueue(limit = 60): Promise<MoodSubmission[]> {
   await requireAdminUser()
   const client = getSupabaseClient()
@@ -374,7 +396,8 @@ export async function listReviewQueue(limit = 60): Promise<MoodSubmission[]> {
     throw new Error(error.message)
   }
 
-  return ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+  const submissions = ((data ?? []) as SubmissionRow[]).map(fromSubmissionRow)
+  return attachDisplayNames(submissions)
 }
 
 export async function rejectSubmission(submissionId: string, reviewComment?: string): Promise<void> {

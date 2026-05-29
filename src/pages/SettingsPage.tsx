@@ -24,6 +24,8 @@ type SettingsPageProps = {
   onSignOut: () => Promise<void>
   onSync: (mode: SyncMode) => Promise<SyncSummary>
   onRefreshAuth: () => Promise<void>
+  displayName: string | null
+  onUpdateDisplayName: (name: string) => Promise<void>
   onExport: () => void
   onImport: (jsonString: string) => ImportResult
   onClearLocal: () => void
@@ -66,6 +68,7 @@ export function SettingsPage(props: SettingsPageProps) {
   const {
     stats, auth, syncMeta, canInstallPrompt, isInstalled,
     onInstallApp, onSignIn, onSignOut, onSync, onRefreshAuth,
+    displayName, onUpdateDisplayName,
     onExport, onImport, onClearLocal,
     mySubmissions, reviewQueue,
     onWithdrawSubmission, onApproveSubmission, onRejectSubmission, onFeatureSubmission,
@@ -270,6 +273,27 @@ export function SettingsPage(props: SettingsPageProps) {
                 ? `已登录 · ${auth.email ?? ''} · ${auth.role === 'admin' ? '管理员' : '普通用户'}`
                 : '未登录'}
             </p>
+
+            {auth.signedIn && (
+              <div className="settings-auth-signin" style={{ alignItems: 'center' }}>
+                <span className="settings-note" style={{ whiteSpace: 'nowrap' }}>昵称</span>
+                <input
+                  className="settings-input"
+                  type="text"
+                  maxLength={20}
+                  placeholder="设置昵称，展示在精选池"
+                  defaultValue={displayName ?? ''}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim()
+                    if (v !== (displayName ?? '')) onUpdateDisplayName(v).catch(() => {})
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  }}
+                />
+              </div>
+            )}
+
             <p className="settings-note">{syncMetaText}</p>
 
             {auth.signedIn ? (
@@ -377,7 +401,7 @@ export function SettingsPage(props: SettingsPageProps) {
                     <span className={`submission-dot ${statusDot(s.status)}`} />
                     <div className="submission-item-body">
                       <span className="submission-item-date">
-                        {s.entryDate} · 用户 {s.userId.slice(0, 8)}
+                        {s.entryDate} · {s.authorDisplayName || `用户 ${s.userId.slice(0, 8)}`}
                       </span>
                       <p className="settings-note" style={{ margin: 0 }}>{s.note || '无备注'}</p>
                     </div>
