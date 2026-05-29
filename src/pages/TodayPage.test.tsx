@@ -9,6 +9,7 @@ describe('TodayPage', () => {
     monthKey: '2026-05',
     dateLabel: '2026 年 5 月 24 日',
     auth: { configured: false, signedIn: false },
+    displayName: null as string | null,
     featuredTemplates: [] as never[],
     monthEntries: [],
     onDateChange: () => {},

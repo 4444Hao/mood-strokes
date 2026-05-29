@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HeatmapCalendar } from '../components/HeatmapCalendar'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
+import { ShareDialog } from '../components/ShareDialog'
 import { ThreeStrokeMoodEditor } from '../components/ThreeStrokeMoodEditor'
 import type { AuthSummary } from '../lib/cloudSync'
 import { daysInMonth, formatCnMonth, toMonthKey } from '../lib/date'
+import { generateShareImage } from '../lib/shareImage'
 import type { FeaturedTemplate, SubmitMoodPayload } from '../types/curation'
 import type { MoodEntry, MoodFace } from '../types/mood'
 
@@ -15,6 +17,7 @@ type TodayPageProps = {
   entry?: MoodEntry
   monthEntries: MoodEntry[]
   auth: AuthSummary
+  displayName: string | null
   featuredTemplates: FeaturedTemplate[]
   onDateChange: (dateKey: string) => void
   onMonthChange: (monthKey: string) => void
@@ -50,7 +53,7 @@ function dateKeyOf(monthKey: string, day: number): string {
 
 export function TodayPage({
   dateKey, todayKey, monthKey, dateLabel, entry, monthEntries,
-  auth, featuredTemplates, onDateChange, onMonthChange, onSave, onSubmitMood,
+  auth, displayName, featuredTemplates, onDateChange, onMonthChange, onSave, onSubmitMood,
 }: TodayPageProps) {
   const [note, setNote] = useState('')
   const [face, setFace] = useState<MoodFace | undefined>(undefined)
@@ -64,13 +67,16 @@ export function TodayPage({
   const [flipDir, setFlipDir] = useState<'left' | 'right' | null>(null)
   const [flipKey, setFlipKey] = useState(0)
   const [submitBusy, setSubmitBusy] = useState(false)
+  const [shareBlob, setShareBlob] = useState<Blob | null>(null)
+  const [shareBusy, setShareBusy] = useState(false)
+  const shareSvgRef = useRef<SVGSVGElement>(null)
   const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
   const [consentPublic, setConsentPublic] = useState(false)
   const [consentTemplate, setConsentTemplate] = useState(false)
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [shareCaption, setShareCaption] = useState('')
-  const undoRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const undoRef = useRef<number | null>(null)
   const mountedRef = useRef(true)
 
   const isToday = dateKey === todayKey
@@ -156,7 +162,7 @@ export function TodayPage({
     setSaveDone(false)
     setSavedHint('')
     setUndoEntry(null)
-    if (undoRef.current) clearTimeout(undoRef.current)
+    if (undoRef.current) window.clearTimeout(undoRef.current)
     try {
       onSave(note, face)
       if (previous) {
@@ -176,8 +182,26 @@ export function TodayPage({
     if (!undoEntry) return
     onSave(undoEntry.note ?? '', undoEntry.face)
     setUndoEntry(null)
-    if (undoRef.current) { clearTimeout(undoRef.current); undoRef.current = null }
+    if (undoRef.current) { window.clearTimeout(undoRef.current); undoRef.current = null }
     setSavedHint('已撤销保存。')
+  }
+
+  const handleGenerateShare = async () => {
+    if (!face || !shareSvgRef.current) return
+    setShareBusy(true)
+    try {
+      const blob = await generateShareImage(
+        shareSvgRef.current,
+        note,
+        auth.signedIn ? (displayName ?? '匿名') : '匿名',
+        dateLabel,
+      )
+      setShareBlob(blob)
+    } catch {
+      setSavedHint('分享图生成失败，请重试。')
+    } finally {
+      setShareBusy(false)
+    }
   }
 
   const handleSave = () => {
@@ -280,6 +304,13 @@ export function TodayPage({
       )}
 
       {savedHint && <p className="saved-hint">{savedHint}</p>}
+      {savedHint && face && (
+        <div className="settings-actions">
+          <button type="button" className="ghost-btn" onClick={handleGenerateShare} disabled={shareBusy}>
+            {shareBusy ? '生成中...' : '生成分享图'}
+          </button>
+        </div>
+      )}
       {undoEntry && (
         <div className="settings-actions">
           <button type="button" className="ghost-btn" onClick={handleUndoSave}>撤销保存</button>
@@ -379,6 +410,13 @@ export function TodayPage({
           {submitHint && <p className="editor-hint" style={{ marginTop: '0.3rem' }}>{submitHint}</p>}
         </div>
       )}
+
+      {/* 隐藏 SVG 用于生成分享图 */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }} aria-hidden>
+        {face && <MoodFaceSvg ref={shareSvgRef} face={face} />}
+      </div>
+
+      <ShareDialog blob={shareBlob} onClose={() => setShareBlob(null)} />
     </section>
   )
 }

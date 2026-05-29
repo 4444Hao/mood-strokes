@@ -253,6 +253,7 @@ function App() {
         entry={todayEntry}
         monthEntries={monthEntries}
         auth={authSummary}
+        displayName={displayName}
         featuredTemplates={featuredTemplates}
         onDateChange={handleEntryDateChange}
         onMonthChange={handleMonthChange}

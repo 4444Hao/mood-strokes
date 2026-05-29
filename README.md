@@ -1,200 +1,72 @@
-# 三笔心情（Mood Strokes）
+<p align="center">
+  <picture>
+    <img src="public/pwa-icon.svg" alt="三笔心情 · Mood Strokes" width="150" />
+  </picture>
+</p>
 
-一个用「三条线 + 随手画」记录每日情绪的极简微表情日记 Web App。
+<h1 align="center">三笔心情 · Mood Strokes</h1>
 
-线上地址：`https://mood-strokes.pages.dev`
+<p align="center">
+  <strong>三笔极简，情绪万千。</strong><br />
+  一个用三条线记录情绪的极简微表情日记。<br />
+  三笔画个表情，留一句话，关掉。
+</p>
 
-## 产品定位
+<p align="center">
+  <a href="https://mood-strokes.pages.dev" target="_blank">
+    <img src="https://img.shields.io/badge/🔗_在线体验-mood--strokes.pages.dev-4e8c4e?style=flat-square" alt="在线演示" />
+  </a>
+  <img src="https://img.shields.io/badge/状态-积极开发中-success?style=flat-square" alt="项目状态" />
+  <img src="https://img.shields.io/badge/许可证-MIT-blue?style=flat-square" alt="许可证" />
+  <img src="https://img.shields.io/badge/PWA-就绪-7b68ee?style=flat-square" alt="PWA" />
+  <img src="https://img.shields.io/badge/离线-可用-orange?style=flat-square" alt="离线可用" />
+</p>
 
-- 不做心理诊断，不做情绪评分。
-- 不强制用户用固定标签定义自己。
-- 用低成本的线条微调表达复杂情绪。
-- 默认私密，用户主动投稿才会进入精选审核流。
+---
 
-## 当前功能完成度（2026-05）
+## 💡 灵感起点
 
-- 今日页
-- 三笔心情绘制与微调（含自由绘制 + 细调）
-- 一句话备注
-- 一天一条记录，重复保存走覆盖确认
+> 自己在书写日志时喜欢用简笔画表达心情。通常是三笔：
+> 两个弓形圆弧是微笑的眼睛，向上弯的弧形是微笑的嘴巴。
+> 将三笔倒置就成了难过。
+> 但每天的表情远不止微笑与难过——通过控制这些弧度，
+> 会产生无数中间态：微笑的眼睛配上小小的嘴巴是淡淡的微笑，
+> 把眼睛微微向中间收拢又添了几分郁闷……
+> 这就是三笔心情的起点：**用最少的笔触，捕捉最微妙的心绪。**
 
-- 月历页
-- 周视图/挂历式浏览（当前交互版本）
-- 日期跳转与历史查看
+## 🎨 设计哲学
 
-- 精选页
-- 展示已入选模板作品（脸 + 文案 + 作者/匿名）
+三条线——左眼、右眼、嘴巴——足以表达人类情绪的完整光谱。
 
-- 设置页
-- 邮箱魔法链接登录
-- 本地与云端同步（安全合并 / 双向覆盖）
-- 我的投稿列表
-- 管理员审核（通过 / 驳回 / 入选模板）
-- 隐私政策与投稿授权说明入口
-- 导出本地数据、清空本地数据、PWA 安装入口
+不是精确测量，而是**直觉绘制 + 语义微调**。  
+画完后，你可以像说话一样调整表情：
 
-## 核心规则（已实现）
+> “嘴角再上扬一点”  
+> “眼尾挑起来一些”  
+> “松一点，别那么紧”
 
-- 投稿前必须勾选公开展示与模板授权。
-- 投稿支持匿名展示（前台匿名，管理员可见账号标识用于审核/风控）。
-- 投稿频率限制：每账号每小时最多 10 次（数据库侧强约束）。
-- 撤回投稿会联动下架已入选模板。
-- 禁止直接删除投稿，必须通过“撤回”流程。
+最终呈现的不是像素级的精准，而是**笔触的温度**。  
+每一天只有一条记录，覆盖意味着新的情绪覆盖旧的——就像日记本翻过一页。
 
-## 技术栈
+## ✨ 功能亮点
 
-- 前端：Vite + React + TypeScript
-- 绘制：SVG
-- PWA：`vite-plugin-pwa`
-- 云端：Supabase（Auth + PostgreSQL + RLS）
-- 部署：Cloudflare Pages
-- CI：GitHub Actions（lint + test + build）
+- 🖌️ **三笔绘制** — 自由笔触，任意顺序，从极简微笑/难过开始，创建唯一的微表情
+- 🎛️ **语义微调滑块** — “嘴角上扬”“眼尾下垂”“松紧”“张力”，像说话一样调表情
+- 📅 **热力图月历** — 折叠式热力图，直观看见这个月的情绪色彩
+- ☁️ **可选云同步** — Supabase Magic Link 免密登录，三种同步模式，RLS 行级安全
+- 📤 **投稿 & 精选** — 匿名投稿你的表情，审核通过后可入选社区精选挂历
+- 📱 **PWA 就绪** — 可安装到桌面，完全离线使用
 
-## 本地开发
+## 🧱 架构总览
 
-### 1) 安装与启动
-
-```bash
-npm install
-npm run dev
-```
-
-### 2) 质量检查
-
-```bash
-npm run lint
-npm run test:run
-npm run build
-```
-
-### 3) 敏感信息扫描
-
-```bash
-npm run security:scan
-```
-
-## 环境变量
-
-复制 `.env.example` 并新建 `.env`：
-
-```bash
-VITE_SUPABASE_URL=你的Supabase项目URL
-VITE_SUPABASE_ANON_KEY=你的Supabase匿名公钥
-VITE_AUTH_REDIRECT_URL=https://mood-strokes.pages.dev
-```
-
-说明：`VITE_AUTH_REDIRECT_URL` 必须与 Supabase Auth 的 Redirect URLs 一致。
-
-## Supabase 初始化
-
-在 Supabase SQL Editor 执行：
-
-- `supabase/schema.sql`
-
-该脚本包含：
-
-- 表结构（`mood_entries` / `profiles` / `mood_submissions` / `featured_templates`）
-- RLS 与策略
-- 管理员判定函数 `is_admin()`
-- 投稿限流与撤回联动函数
-- 必要的 `GRANT` 权限基线
-
-## 管理员与精选流
-
-### 1) 设管理员
-
-管理员由 `public.profiles.role = 'admin'` 判定。
-
-### 2) 审核语义
-
-- `通过`：仅审核通过，不会进入精选展示。
-- `入选模板`：写入 `featured_templates`，会在精选页展示。
-- `撤回投稿`：将投稿标记 `withdrawn`，并下架相关精选模板。
-
-## 部署（Cloudflare Pages）
-
-### 方式 ：GitHub 自动部署
-
-1. Cloudflare Pages 连接 GitHub 仓库。
-2. Build settings：
-- Build command：`npm run build`
-- Build output directory：`dist`
-- Root directory：`/`
-3. 推送到生产分支（如 `main`）后自动部署。
-
-
-## 常见问题排查
-
-### 1) `permission denied for table mood_submissions`
-
-原因：表权限未授予 `authenticated`。
-
-处理：重新执行 `supabase/schema.sql` 中 GRANT 段落。
-
-### 2) 精选页为空
-
-优先检查：
-
-- 投稿状态是否是 `featured`（不是 `approved`）。
-- `featured_templates` 是否存在该投稿 `source_submission_id` 且 `is_active=true`。
-- 是否误点“撤回投稿”（撤回后会下架精选）。
-
-### 3) 手机端显示旧版本
-
-原因通常是 PWA/浏览器缓存。
-
-处理：
-
-- Cloudflare 确认最新部署成功。
-- 手机端强制刷新或清理站点缓存后重开。
-
-## 数据与安全说明
-
-- 前端只使用 `anon key`，禁止在前端使用 `service_role key`。
-- 云端数据隔离依赖 RLS + `auth.uid()`。
-- 投稿限流在数据库层执行，不依赖前端校验。
-- 账号登录采用邮箱魔法链接，管理员账号建议使用独立邮箱并开启更强邮箱安全策略。
-
-## 目录结构
-
-```text
-.
-├─ .github/workflows/ci.yml
-├─ public/
-│  ├─ favicon.svg
-│  ├─ pwa-icon.svg
-│  ├─ privacy.html
-│  └─ submission-license.html
-├─ src/
-│  ├─ components/
-│  │  ├─ ThreeStrokeMoodEditor.tsx
-│  │  ├─ MoodFaceSvg.tsx
-│  │  ├─ ParametricFaceEditor.tsx
-│  │  └─ FreehandFaceEditor.tsx
-│  ├─ pages/
-│  │  ├─ TodayPage.tsx
-│  │  ├─ MonthPage.tsx
-│  │  ├─ FeaturedPage.tsx
-│  │  └─ SettingsPage.tsx
-│  ├─ lib/
-│  │  ├─ storage.ts
-│  │  ├─ cloudSync.ts
-│  │  ├─ curation.ts
-│  │  ├─ supabase.ts
-│  │  ├─ strokeAdjust.ts
-│  │  ├─ date.ts
-│  │  └─ presets.ts
-│  ├─ types/
-│  │  ├─ mood.ts
-│  │  └─ curation.ts
-│  ├─ App.tsx
-│  └─ main.tsx
-└─ supabase/schema.sql
-```
-
-## 合规文档
-
-- 隐私政策：`/privacy.html`
-- 投稿授权说明：`/submission-license.html`
-
-建议在每次策略变化时同步更新生效日期和文案版本。
+```mermaid
+graph TD
+    A[用户浏览器<br/>PWA] --> B[localStorage<br/>离线数据自有]
+    A --> C[可选云同步<br/>Supabase]
+    B --> D[JSON 导入/导出<br/>换设备不依赖云端]
+    C --> E[Magic Link 邮箱登录]
+    C --> F[三种同步模式]
+    C --> G[RLS 行级安全]
+    A --> H[Cloudflare Pages<br/>自动部署]
+    H --> I[GitHub Push<br/>tsc + vite build]
+    H --> J[CSP 安全头]

@@ -192,8 +192,8 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [tuneDone, setTuneDone] = useState(false)
-  const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const tuneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const editTimerRef = useRef<number | null>(null)
+  const tuneTimerRef = useRef<number | null>(null)
   const draftRef = useRef<Point | null>(null)
   const rafRef = useRef<number | null>(null)
   const lastExternalRef = useRef<MoodFace | undefined>(undefined)
@@ -201,9 +201,9 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   const activateEditing = useCallback(() => {
     setIsEditing((prev) => (prev ? prev : true))
     if (editTimerRef.current) {
-      clearTimeout(editTimerRef.current)
+      window.clearTimeout(editTimerRef.current)
     }
-    editTimerRef.current = setTimeout(() => {
+    editTimerRef.current = window.setTimeout(() => {
       setIsEditing(false)
       setDragState(null)
     }, 5000)
@@ -212,10 +212,10 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
   useEffect(() => {
     return () => {
       if (editTimerRef.current) {
-        clearTimeout(editTimerRef.current)
+        window.clearTimeout(editTimerRef.current)
       }
       if (tuneTimerRef.current) {
-        clearTimeout(tuneTimerRef.current)
+        window.clearTimeout(tuneTimerRef.current)
       }
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
@@ -430,7 +430,7 @@ export function ThreeStrokeMoodEditor({ value, onChange }: ThreeStrokeMoodEditor
     setIsEditing(false)
     setDragState(null)
     setTuneDone(true)
-    if (tuneTimerRef.current) clearTimeout(tuneTimerRef.current)
+    if (tuneTimerRef.current) window.clearTimeout(tuneTimerRef.current)
     tuneTimerRef.current = window.setTimeout(() => setTuneDone(false), 1400)
   }
 

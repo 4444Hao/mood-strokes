@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { applyStrokeAdjustments, getAdjustedStrokeWidth, pointsToSmoothPath } from '../lib/strokeAdjust'
 import type { ArcParams, MoodFace, Point, Stroke } from '../types/mood'
 
@@ -47,52 +48,50 @@ function freehandPath(stroke: Stroke): string {
   return pointsToSmoothPath(stroke.points.map(sanitizePoint))
 }
 
-export function MoodFaceSvg({ face, className }: MoodFaceSvgProps) {
-  return (
-    <svg viewBox="0 0 100 100" className={className} aria-hidden>
-      <circle cx="50" cy="50" r="45" className="mood-face-bg" />
+export const MoodFaceSvg = forwardRef<SVGSVGElement, MoodFaceSvgProps>(
+  function MoodFaceSvg({ face, className }, ref) {
+    return (
+      <svg ref={ref} viewBox="0 0 100 100" className={className} aria-hidden>
+        <circle cx="50" cy="50" r="45" className="mood-face-bg" />
 
-      {face.mode === 'parametric' ? (
-        <>
-          <path d={arcPath(face.leftEye)} className="mood-face-line" style={{ strokeWidth: face.leftEye.strokeWidth }} />
-          <path d={arcPath(face.rightEye)} className="mood-face-line" style={{ strokeWidth: face.rightEye.strokeWidth }} />
-          <path d={arcPath(face.mouth)} className="mood-face-line mood-face-mouth" style={{ strokeWidth: face.mouth.strokeWidth }} />
-        </>
-      ) : face.mode === 'freehand' ? (
-        <>
-          {face.strokes.map((stroke) => {
-            if (stroke.points.length === 0) {
-              return null
-            }
-            return (
-              <path
-                key={stroke.id}
-                d={freehandPath(stroke)}
-                className="mood-face-line"
-                style={{ strokeWidth: stroke.strokeWidth }}
-              />
-            )
-          })}
-        </>
-      ) : (
-        <>
-          {face.strokes.map((stroke) => {
-            const clampedOriginal = stroke.originalPoints.map(sanitizePoint)
-            const points = applyStrokeAdjustments(clampedOriginal, stroke.adjustments, stroke.role)
-            if (points.length === 0) {
-              return null
-            }
-            return (
-              <path
-                key={stroke.id}
-                d={pointsToSmoothPath(points)}
-                className="mood-face-line"
-                style={{ strokeWidth: clamp(getAdjustedStrokeWidth(stroke), 0.5, 10) }}
-              />
-            )
-          })}
-        </>
-      )}
-    </svg>
-  )
-}
+        {face.mode === 'parametric' ? (
+          <>
+            <path d={arcPath(face.leftEye)} className="mood-face-line" style={{ strokeWidth: face.leftEye.strokeWidth }} />
+            <path d={arcPath(face.rightEye)} className="mood-face-line" style={{ strokeWidth: face.rightEye.strokeWidth }} />
+            <path d={arcPath(face.mouth)} className="mood-face-line mood-face-mouth" style={{ strokeWidth: face.mouth.strokeWidth }} />
+          </>
+        ) : face.mode === 'freehand' ? (
+          <>
+            {face.strokes.map((stroke) => {
+              if (stroke.points.length === 0) return null
+              return (
+                <path
+                  key={stroke.id}
+                  d={freehandPath(stroke)}
+                  className="mood-face-line"
+                  style={{ strokeWidth: stroke.strokeWidth }}
+                />
+              )
+            })}
+          </>
+        ) : (
+          <>
+            {face.strokes.map((stroke) => {
+              const clampedOriginal = stroke.originalPoints.map(sanitizePoint)
+              const points = applyStrokeAdjustments(clampedOriginal, stroke.adjustments, stroke.role)
+              if (points.length === 0) return null
+              return (
+                <path
+                  key={stroke.id}
+                  d={pointsToSmoothPath(points)}
+                  className="mood-face-line"
+                  style={{ strokeWidth: clamp(getAdjustedStrokeWidth(stroke), 0.5, 10) }}
+                />
+              )
+            })}
+          </>
+        )}
+      </svg>
+    )
+  },
+)
