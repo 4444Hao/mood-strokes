@@ -1589,6 +1589,30 @@
   gap: 0.6rem;
 }
 
+.share-dialog-mask {
+  align-items: flex-start;
+  padding-top: 2rem;
+}
+
+.share-dialog-card {
+  width: min(380px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.share-preview-img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.share-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
 .dialog-title {
   margin: 0;
   font-family: var(--font-title);

@@ -49,15 +49,15 @@ export function ShareDialog({ blob, onClose }: ShareDialogProps) {
   }
 
   return (
-    <div className="dialog-mask" role="dialog" aria-modal="true" aria-label="分享预览">
-      <div className="dialog-card" style={{ width: 'min(420px, 90vw)' }}>
+    <div className="dialog-mask share-dialog-mask" role="dialog" aria-modal="true" aria-label="分享预览">
+      <div className="dialog-card share-dialog-card">
         <p className="dialog-title">分享这张表情</p>
-        <img src={url} alt="分享预览" style={{ width: '100%', borderRadius: '12px' }} />
-        <div className="settings-actions">
-          <button type="button" className="ghost-btn" onClick={handleDownload}>保存图片</button>
+        <img src={url} alt="分享预览" className="share-preview-img" />
+        <div className="share-dialog-actions">
           <button type="button" className="primary-btn" onClick={handleShare} disabled={busy}>
-            {busy ? '处理中...' : '分享'}
+            {busy ? '处理中...' : '📤 分享'}
           </button>
+          <button type="button" className="ghost-btn" onClick={handleDownload}>💾 保存</button>
           <button type="button" className="ghost-btn" onClick={onClose}>关闭</button>
         </div>
       </div>

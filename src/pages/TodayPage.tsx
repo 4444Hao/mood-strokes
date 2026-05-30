@@ -315,10 +315,10 @@ export function TodayPage({
       )}
 
       {savedHint && <p className="saved-hint">{savedHint}</p>}
-      {savedHint && face && (
+      {face && (
         <div className="settings-actions">
           <button type="button" className="ghost-btn" onClick={handleGenerateShare} disabled={shareBusy}>
-            {shareBusy ? '生成中...' : '生成分享图'}
+            {shareBusy ? '生成中...' : '📤 生成分享图'}
           </button>
         </div>
       )}
