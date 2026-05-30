@@ -388,7 +388,7 @@ export async function listReviewQueue(limit = 60): Promise<MoodSubmission[]> {
   const { data, error } = await client
     .from(MOOD_SUBMISSIONS_TABLE)
     .select('id,user_id,entry_date,face,note,share_caption,consent_public,consent_template,is_anonymous,status,review_comment,reviewed_by,reviewed_at,created_at,updated_at')
-    .in('status', ['uploaded', 'approved'])
+    .in('status', ['uploaded'])
     .order('created_at', { ascending: false })
     .limit(limit)
 

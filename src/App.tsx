@@ -103,7 +103,6 @@ function App() {
     reviewQueue,
     handleSubmitMood,
     handleWithdrawSubmission,
-    handleApproveSubmission,
     handleRejectSubmission,
     handleFeatureSubmission,
   } = useCuration(authSummary)
@@ -256,7 +255,6 @@ function App() {
           mySubmissions={mySubmissions}
           reviewQueue={reviewQueue}
           onWithdrawSubmission={handleWithdrawSubmission}
-          onApproveSubmission={handleApproveSubmission}
           onRejectSubmission={handleRejectSubmission}
           onFeatureSubmission={handleFeatureSubmission}
         />
@@ -313,7 +311,6 @@ function App() {
     reviewQueue,
     handleSubmitMood,
     handleWithdrawSubmission,
-    handleApproveSubmission,
     handleRejectSubmission,
     handleFeatureSubmission,
   ])

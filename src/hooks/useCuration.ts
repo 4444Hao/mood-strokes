@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  approveSubmission,
   featureSubmission,
   listFeaturedTemplates,
   listMySubmissions,
@@ -77,14 +76,6 @@ export function useCuration(auth: AuthSummary) {
     [reloadCuration],
   )
 
-  const handleApproveSubmission = useCallback(
-    async (submissionId: string, reviewComment?: string) => {
-      await approveSubmission(submissionId, reviewComment)
-      await reloadCuration()
-    },
-    [reloadCuration],
-  )
-
   const handleRejectSubmission = useCallback(
     async (submissionId: string, reviewComment?: string) => {
       await rejectSubmission(submissionId, reviewComment)
@@ -114,7 +105,6 @@ export function useCuration(auth: AuthSummary) {
     reloadCuration,
     handleSubmitMood,
     handleWithdrawSubmission,
-    handleApproveSubmission,
     handleRejectSubmission,
     handleFeatureSubmission,
   }

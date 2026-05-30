@@ -33,7 +33,6 @@ type SettingsPageProps = {
   mySubmissions: MoodSubmission[]
   reviewQueue: MoodSubmission[]
   onWithdrawSubmission: (submissionId: string) => Promise<void>
-  onApproveSubmission: (submissionId: string, reviewComment?: string) => Promise<void>
   onRejectSubmission: (submissionId: string, reviewComment?: string) => Promise<void>
   onFeatureSubmission: (submissionId: string, title: string, description?: string) => Promise<void>
 }
@@ -72,7 +71,7 @@ export function SettingsPage(props: SettingsPageProps) {
     displayName, onUpdateDisplayName,
     onExport, onImport, onClearLocal,
     mySubmissions, reviewQueue,
-    onWithdrawSubmission, onApproveSubmission, onRejectSubmission, onFeatureSubmission,
+    onWithdrawSubmission, onRejectSubmission, onFeatureSubmission,
   } = props
 
   const [email, setEmail] = useState('')
@@ -229,11 +228,6 @@ export function SettingsPage(props: SettingsPageProps) {
   const handleWithdraw = (id: string) => setConfirmDialog({
     title: '撤回投稿', message: '撤回后从精选下架。', confirmLabel: '确认', tone: 'warn',
     onConfirm: async () => { try { setBusyAction('withdraw'); await onWithdrawSubmission(id); showToast('已撤回。') } catch (e) { showToast(e instanceof Error ? e.message : '失败。') } finally { setBusyAction(null) } },
-  })
-
-  const openApprove = (id: string) => setInputDialog({
-    title: '通过审核', defaultValue: '这条心情很有细节，已通过。', placeholder: '反馈（可选）', confirmLabel: '通过',
-    onConfirm: async (v) => { try { setBusyAction('review'); await onApproveSubmission(id, v || undefined); showToast('已通过。') } catch (e) { showToast(e instanceof Error ? e.message : '失败。') } finally { setBusyAction(null) } },
   })
 
   const openReject = (id: string) => setInputDialog({
@@ -442,7 +436,6 @@ export function SettingsPage(props: SettingsPageProps) {
                     </div>
                     <MoodFaceSvg face={s.face} className="submission-thumb" />
                     <div className="settings-actions" style={{ gap: '0.3rem' }}>
-                      <button type="button" className="mini-chip" disabled={isBusy} onClick={() => openApprove(s.id)}>通过</button>
                       <button type="button" className="mini-chip" disabled={isBusy} onClick={() => openReject(s.id)}>驳回</button>
                       <button type="button" className="mini-chip" disabled={isBusy} onClick={() => openFeature(s.id)}>入选</button>
                     </div>
