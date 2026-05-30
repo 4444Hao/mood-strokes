@@ -34,7 +34,7 @@ type SettingsPageProps = {
   reviewQueue: MoodSubmission[]
   onWithdrawSubmission: (submissionId: string) => Promise<void>
   onRejectSubmission: (submissionId: string, reviewComment?: string) => Promise<void>
-  onFeatureSubmission: (submissionId: string, title: string, description?: string) => Promise<void>
+  onFeatureSubmission: (submissionId: string) => Promise<void>
 }
 
 type ConfirmDialogState = {
@@ -235,12 +235,9 @@ export function SettingsPage(props: SettingsPageProps) {
     onConfirm: async (v) => { try { setBusyAction('review'); await onRejectSubmission(id, v || undefined); showToast('已驳回。') } catch (e) { showToast(e instanceof Error ? e.message : '失败。') } finally { setBusyAction(null) } },
   })
 
-  const openFeature = (id: string) => setInputDialog({
-    title: '入选模板', defaultValue: '今日精选', placeholder: '标题（必填）', confirmLabel: '下一步', requireNonEmpty: true, emptyError: '不能为空。',
-    onConfirm: async (title) => setInputDialog({
-      title: '入选模板', defaultValue: '一张很克制、细腻的表情。', placeholder: '说明（可选）', confirmLabel: '确认入选',
-      onConfirm: async (desc) => { try { setBusyAction('review'); await onFeatureSubmission(id, title, desc || undefined); showToast('已入选。') } catch (e) { showToast(e instanceof Error ? e.message : '失败。') } finally { setBusyAction(null) } },
-    }),
+  const openFeature = (id: string) => setConfirmDialog({
+    title: '入选精选池', message: '确认将此作品放入精选池？入选后所有用户可见。', confirmLabel: '确认入选',
+    onConfirm: async () => { try { setBusyAction('review'); await onFeatureSubmission(id); showToast('已入选。') } catch (e) { showToast(e instanceof Error ? e.message : '失败。') } finally { setBusyAction(null) } },
   })
 
   const closeDialogs = () => { if (!dialogBusy) { setConfirmDialog(null); setInputDialog(null); setDialogError('') } }

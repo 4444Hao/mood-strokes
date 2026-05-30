@@ -85,8 +85,8 @@ export function useCuration(auth: AuthSummary) {
   )
 
   const handleFeatureSubmission = useCallback(
-    async (submissionId: string, title: string, description?: string) => {
-      await featureSubmission({ submissionId, title, description })
+    async (submissionId: string) => {
+      await featureSubmission(submissionId)
       await reloadCuration()
       try {
         const templates = await listFeaturedTemplates()

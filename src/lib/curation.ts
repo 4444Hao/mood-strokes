@@ -446,11 +446,7 @@ export async function approveSubmission(submissionId: string, reviewComment?: st
   }
 }
 
-export async function featureSubmission(params: {
-  submissionId: string
-  title: string
-  description?: string
-}): Promise<void> {
+export async function featureSubmission(submissionId: string): Promise<void> {
   const admin = await requireAdminUser()
   const client = getSupabaseClient()
   if (!client) {
@@ -458,10 +454,8 @@ export async function featureSubmission(params: {
   }
 
   const { error } = await client.rpc('feature_submission', {
-    p_submission_id: params.submissionId,
+    p_submission_id: submissionId,
     p_admin_id: admin.id,
-    p_title: params.title.trim(),
-    p_description: params.description?.trim() || null,
   })
 
   if (error) {

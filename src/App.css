@@ -688,11 +688,10 @@
 .folio-card-2 .folio-tape { left: 8px; transform: rotate(-5deg); }
 .folio-card-3 .folio-tape { right: 8px; left: auto; transform: rotate(12deg); }
 
-.folio-face {
-  width: 100%;
-  max-width: 110px;
-  aspect-ratio: 1 / 1;
-}
+.folio-card-0 .folio-face { max-width: 120px; }
+.folio-card-1 .folio-face { max-width: 98px; }
+.folio-card-2 .folio-face { max-width: 105px; }
+.folio-card-3 .folio-face { max-width: 114px; }
 
 .folio-text {
   text-align: center;
@@ -705,6 +704,17 @@
   margin: 0;
   font-family: var(--font-title);
   font-size: 0.85rem;
+}
+
+.folio-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .folio-author {
@@ -742,12 +752,14 @@
     gap: 0.3rem;
   }
 
-  .folio-face {
-    max-width: 88px;
-  }
+  .folio-card-0 .folio-face { max-width: 96px; }
+  .folio-card-1 .folio-face { max-width: 82px; }
+  .folio-card-2 .folio-face { max-width: 86px; }
+  .folio-card-3 .folio-face { max-width: 92px; }
 
-  .folio-title { font-size: 0.75rem; }
-  .folio-author { font-size: 0.65rem; }
+  .folio-title { font-size: 0.72rem; }
+  .folio-note { font-size: 0.68rem; }
+  .folio-author { font-size: 0.62rem; }
 
   .folio-tape {
     height: 6px;

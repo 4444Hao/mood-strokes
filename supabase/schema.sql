@@ -388,9 +388,7 @@ grant select, insert, update, delete on table public.mood_submissions to authent
 
 create or replace function public.feature_submission(
   p_submission_id uuid,
-  p_admin_id uuid,
-  p_title text,
-  p_description text default null
+  p_admin_id uuid
 )
 returns void
 language plpgsql
@@ -431,8 +429,8 @@ begin
   values (
     v_submission.id,
     p_admin_id,
-    coalesce(nullif(btrim(p_title), ''), '今日精选'),
-    nullif(btrim(coalesce(p_description, '')), ''),
+    v_submission.note,
+    v_submission.note,
     v_submission.face,
     v_submission.note,
     coalesce(v_submission.is_anonymous, false),
@@ -450,7 +448,7 @@ begin
 end;
 $$;
 
-grant execute on function public.feature_submission(uuid, uuid, text, text) to authenticated;
+grant execute on function public.feature_submission(uuid, uuid) to authenticated;
 
 grant execute on function public.submit_mood_submission(
   text,

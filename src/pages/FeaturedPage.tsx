@@ -91,7 +91,7 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
               <div className="folio-tape" aria-hidden />
               <MoodFaceSvg face={t.face} className="folio-face" />
               <div className="folio-text">
-                <p className="folio-title">{t.title}</p>
+                {t.note && <p className="folio-note">{t.note}</p>}
                 <p className="folio-author">by {authorLabel(t)}</p>
               </div>
             </div>
