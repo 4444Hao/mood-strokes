@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import {
   EMAIL_SIGNIN_COOLDOWN_SECONDS,
@@ -252,11 +252,22 @@ export function SettingsPage(props: SettingsPageProps) {
     finally { setDialogBusy(false) }
   }
 
+  const inputDialogRef = useRef<InputDialogState | null>(null)
+  inputDialogRef.current = inputDialog
+
   const confirmInputAction = async () => {
     if (!inputDialog || dialogBusy) return
     const v = dialogInput.trim()
     if (inputDialog.requireNonEmpty && !v) { setDialogError(inputDialog.emptyError ?? '请填写。'); return }
-    try { setDialogBusy(true); await inputDialog.onConfirm(v); setInputDialog(null); setDialogError('') }
+    try {
+      setDialogBusy(true)
+      await inputDialog.onConfirm(v)
+      // 如果 onConfirm 已经设置了新的对话框（如“入选模板”的第二步），不要清除
+      if (!inputDialogRef.current || inputDialogRef.current === inputDialog) {
+        setInputDialog(null)
+      }
+      setDialogError('')
+    }
     catch (e) { setDialogError(e instanceof Error ? e.message : '操作失败。') }
     finally { setDialogBusy(false) }
   }
