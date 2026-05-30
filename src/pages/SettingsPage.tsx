@@ -354,7 +354,7 @@ export function SettingsPage(props: SettingsPageProps) {
 
             {!auth.signedIn && (
               <p className="settings-note">
-                邮件中包含 6 位验证码（也附带备用登录链接）。在当前浏览器输入验证码即可登录，无需跳转。
+                邮件中包含验证码（也附带备用登录链接）。在当前浏览器输入验证码即可登录，无需跳转。
               </p>
             )}
           </>
