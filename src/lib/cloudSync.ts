@@ -318,8 +318,8 @@ export async function verifyOtp(email: string, token: string): Promise<void> {
   ensureConfigured()
   const normalized = normalizeEmail(email)
   const cleanToken = token.trim()
-  if (!cleanToken || cleanToken.length !== 6) {
-    throw new Error('请输入 6 位验证码。')
+  if (!cleanToken || cleanToken.length < 6) {
+    throw new Error('请输入正确的验证码。')
   }
   const client = getSupabaseClient()
   if (!client) {

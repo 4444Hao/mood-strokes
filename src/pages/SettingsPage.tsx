@@ -150,7 +150,7 @@ export function SettingsPage(props: SettingsPageProps) {
   }
 
   const handleVerifyOtp = async () => {
-    if (!otpToken.trim()) { showToast('请输入 6 位验证码。'); return }
+    if (otpToken.trim().length < 6) { showToast('请输入验证码。'); return }
     try {
       setOtpBusy(true)
       await onVerifyOtp(otpEmail, otpToken)
@@ -338,13 +338,13 @@ export function SettingsPage(props: SettingsPageProps) {
 
                 {otpEmail && (
                   <div className="settings-auth-signin">
-                    <input className="settings-input" type="text" inputMode="numeric" maxLength={6}
-                      placeholder="输入 6 位验证码" value={otpToken}
+                    <input className="settings-input" type="text" inputMode="numeric" maxLength={8}
+                      placeholder="输入验证码" value={otpToken}
                       onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ''))}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp() }}
                       autoFocus />
                     <button type="button" className="ghost-btn" onClick={handleVerifyOtp}
-                      disabled={otpBusy || otpToken.length !== 6}>
+                      disabled={otpBusy || otpToken.length < 6}>
                       {otpBusy ? '验证中...' : '验证'}
                     </button>
                   </div>
