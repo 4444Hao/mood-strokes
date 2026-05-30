@@ -1,12 +1,22 @@
 import QRCode from 'qrcode'
 
 const W = 1080
+const H = 1440
 const M = 80
 const BG = '#f7f1e7'
 const INK = '#2f2218'
 const SOFT = '#6b5748'
 
 const FONT = '"Noto Serif SC","Source Han Serif SC","STKaiti","KaiTi",serif'
+
+function line(ctx: CanvasRenderingContext2D, y: number) {
+  ctx.strokeStyle = '#d8c8b2'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(M, y)
+  ctx.lineTo(W - M, y)
+  ctx.stroke()
+}
 
 export async function generateShareImage(
   faceSvgElement: SVGSVGElement,
@@ -16,82 +26,56 @@ export async function generateShareImage(
 ): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = W
-  canvas.height = W
+  canvas.height = H
   const ctx = canvas.getContext('2d')!
 
-  // Background
   ctx.fillStyle = BG
-  ctx.fillRect(0, 0, W, W)
+  ctx.fillRect(0, 0, W, H)
 
-  // Title
+  // Header
   ctx.fillStyle = INK
   ctx.font = `700 56px ${FONT}`
   ctx.textAlign = 'center'
-  ctx.fillText('三笔心情', W / 2, 90)
-
-  // Subtitle
+  ctx.fillText('三笔心情', W / 2, 100)
   ctx.fillStyle = SOFT
   ctx.font = `28px ${FONT}`
-  ctx.fillText('三笔极简，情绪万千。', W / 2, 136)
+  ctx.fillText('三笔极简，情绪万千。', W / 2, 146)
+  line(ctx, 180)
 
-  // Separator
-  ctx.strokeStyle = '#d8c8b2'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(M, 168)
-  ctx.lineTo(W - M, 168)
-  ctx.stroke()
-
-  // Face SVG → Image
-  const faceSize = 520
+  // Face
+  const faceSize = 600
   const faceImg = await svgToImage(faceSvgElement, faceSize)
-  const faceX = (W - faceSize) / 2
-  const faceY = 210
-  ctx.drawImage(faceImg, faceX, faceY, faceSize, faceSize)
-
-  // Separator
-  ctx.beginPath()
-  ctx.moveTo(M, 760)
-  ctx.lineTo(W - M, 760)
-  ctx.stroke()
+  ctx.drawImage(faceImg, (W - faceSize) / 2, 230, faceSize, faceSize)
+  line(ctx, 860)
 
   // Note
   ctx.fillStyle = INK
   ctx.font = `34px ${FONT}`
+  ctx.textAlign = 'center'
   const noteText = note || '今天的心情，都在三笔之间。'
-  const maxWidth = W - M * 2
-  const lines = wrapText(ctx, `"${noteText}"`, maxWidth)
-  const noteY = 810
-  lines.forEach((line, i) => {
-    ctx.fillText(line, W / 2, noteY + i * 48)
-  })
+  const lines = wrapText(ctx, `"${noteText}"`, W - M * 2)
+  const noteBaseY = 920
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, noteBaseY + i * 50))
 
-  // Bottom row: QR + date/author on same line
-  const qrSize = 172
+  // Bottom row
+  const qrSize = 160
   const qrX = W - M - qrSize
-  const rowY = W - M - 10
+  const rowCenterY = H - M - 40
 
   const qrCanvas = document.createElement('canvas')
   await QRCode.toCanvas(qrCanvas, 'https://mood-strokes.pages.dev', {
-    width: qrSize,
-    margin: 1,
-    color: { dark: '#2f2218', light: '#f7f1e7' },
+    width: qrSize, margin: 1,
+    color: { dark: INK, light: BG },
   })
-  const qrTopY = rowY - qrSize
-  ctx.drawImage(qrCanvas, qrX, qrTopY, qrSize, qrSize)
+  ctx.drawImage(qrCanvas, qrX, rowCenterY - qrSize / 2, qrSize, qrSize)
 
-  // Date + Author — same row as QR, left-aligned, vertically centered with QR
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.font = `26px ${FONT}`
+  ctx.font = `28px ${FONT}`
   ctx.fillStyle = SOFT
-  ctx.fillText(`${dateLabel}  ·  ${authorLabel}`, M, qrTopY + qrSize / 2)
+  ctx.fillText(`${dateLabel}  ·  ${authorLabel}`, M, rowCenterY)
 
-  // Separator above bottom row
-  ctx.beginPath()
-  ctx.moveTo(M, rowY - qrSize - 20)
-  ctx.lineTo(W - M, rowY - qrSize - 20)
-  ctx.stroke()
+  line(ctx, rowCenterY - qrSize / 2 - 36)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
