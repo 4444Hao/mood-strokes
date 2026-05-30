@@ -65,8 +65,8 @@ graph TD
 ```
 
 > ✨ 这是一个 Vibe Coding 实验项目。  
-> 欢迎使用与交流：  
->• GitHub Issues
->• 邮箱：zouxinpangbai@qq.com 
+>欢迎使用与交流：  
+>- GitHub Issues
+>- 邮箱：zouxinpangbai@qq.com 
 
 ◍ Happy vibing 😊
