@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   featureSubmission,
+  getHourlySubmissionCount,
   listFeaturedTemplates,
   listMySubmissions,
   listReviewQueue,
@@ -103,6 +104,7 @@ export function useCuration(auth: AuthSummary) {
     mySubmissions,
     reviewQueue,
     reloadCuration,
+    getHourlySubmissionCount,
     handleSubmitMood,
     handleWithdrawSubmission,
     handleRejectSubmission,

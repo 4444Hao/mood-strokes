@@ -291,6 +291,22 @@ export async function submitMoodEntry(payload: SubmitMoodPayload): Promise<MoodS
   return fromSubmissionRow(data as SubmissionRow)
 }
 
+export async function getHourlySubmissionCount(): Promise<number> {
+  try {
+    await requireSessionUser()
+    const client = getSupabaseClient()
+    if (!client) return 0
+    const { count, error } = await client
+      .from(MOOD_SUBMISSIONS_TABLE)
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', new Date(Date.now() - 3600000).toISOString())
+    if (error || count === null) return 0
+    return count
+  } catch {
+    return 0
+  }
+}
+
 export async function listMySubmissions(limit = 30): Promise<MoodSubmission[]> {
   const user = await requireSessionUser()
   const client = getSupabaseClient()
@@ -363,18 +379,21 @@ async function attachDisplayNames(submissions: MoodSubmission[]): Promise<MoodSu
   const client = getSupabaseClient()
   if (!client) return submissions
   const nameMap = new Map<string, string>()
+  const emailMap = new Map<string, string>()
   try {
     const { data } = await client
       .from(PROFILES_TABLE)
-      .select('user_id,display_name')
+      .select('user_id,display_name,email')
       .in('user_id', userIds)
-    ;((data ?? []) as ProfileNameRow[]).forEach((row) => {
+    ;((data ?? []) as Array<{ user_id: string; display_name: string | null; email: string | null }>).forEach((row) => {
       if (row.display_name?.trim()) nameMap.set(row.user_id, row.display_name.trim())
+      if (row.email) emailMap.set(row.user_id, row.email)
     })
   } catch { /* ignore */ }
   return submissions.map((s) => ({
     ...s,
     authorDisplayName: nameMap.get(s.userId),
+    authorEmail: emailMap.get(s.userId),
   }))
 }
 

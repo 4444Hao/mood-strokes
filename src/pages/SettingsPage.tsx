@@ -441,7 +441,7 @@ export function SettingsPage(props: SettingsPageProps) {
                     <span className={`submission-dot ${statusDot(s.status)}`} />
                     <div className="submission-item-body">
                       <span className="submission-item-date">
-                        {s.entryDate} · {s.authorDisplayName || `用户 ${s.userId.slice(0, 8)}`}
+                        {s.entryDate} · {s.authorDisplayName || '未设昵称'} · {s.authorEmail || s.userId.slice(0, 8)}
                       </span>
                       <p className="settings-note" style={{ margin: 0 }}>{s.note || '无备注'}</p>
                     </div>

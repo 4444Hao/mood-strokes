@@ -7,6 +7,7 @@ describe('TodayPage', () => {
     dateKey: '2026-05-24',
     todayKey: '2026-05-24',
     monthKey: '2026-05',
+    minDateKey: '2026-04-01',
     dateLabel: '2026 年 5 月 24 日',
     auth: { configured: false, signedIn: false },
     displayName: null as string | null,

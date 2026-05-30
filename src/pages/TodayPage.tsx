@@ -13,6 +13,7 @@ type TodayPageProps = {
   dateKey: string
   todayKey: string
   monthKey: string
+  minDateKey: string
   dateLabel: string
   entry?: MoodEntry
   monthEntries: MoodEntry[]
@@ -22,6 +23,7 @@ type TodayPageProps = {
   onDateChange: (dateKey: string) => void
   onMonthChange: (monthKey: string) => void
   onSave: (note: string, face: MoodFace) => void
+  onCheckQuota?: () => Promise<number>
   onSubmitMood: (payload: SubmitMoodPayload) => Promise<void>
 }
 
@@ -52,8 +54,8 @@ function dateKeyOf(monthKey: string, day: number): string {
 }
 
 export function TodayPage({
-  dateKey, todayKey, monthKey, dateLabel, entry, monthEntries,
-  auth, displayName, featuredTemplates, onDateChange, onMonthChange, onSave, onSubmitMood,
+  dateKey, todayKey, monthKey, minDateKey, dateLabel, entry, monthEntries,
+  auth, displayName, featuredTemplates, onDateChange, onMonthChange, onSave, onCheckQuota, onSubmitMood,
 }: TodayPageProps) {
   const [note, setNote] = useState('')
   const [face, setFace] = useState<MoodFace | undefined>(undefined)
@@ -68,6 +70,7 @@ export function TodayPage({
   const [submitBusy, setSubmitBusy] = useState(false)
   const [shareBlob, setShareBlob] = useState<Blob | null>(null)
   const [shareBusy, setShareBusy] = useState(false)
+  const [quotaLeft, setQuotaLeft] = useState<number | null>(null)
   const shareSvgRef = useRef<SVGSVGElement>(null)
   const [submitDone, setSubmitDone] = useState(false)
   const [submitHint, setSubmitHint] = useState('')
@@ -120,10 +123,14 @@ export function TodayPage({
       const [y, m] = monthKey.split('-').map(Number)
       const prevDate = new Date(y, m - 2, 1)
       const pmk = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
+      if (pmk < minDateKey.slice(0, 7)) return
       const pd = daysInMonth(pmk)
-      onDateChange(`${pmk}-${String(pd).padStart(2, '0')}`)
+      const newKey = `${pmk}-${String(pd).padStart(2, '0')}`
+      if (newKey < minDateKey) return
+      onDateChange(newKey)
       return
     }
+    if (dir === 'prev' && dateKeyOf(monthKey, day - 1) < minDateKey) return
     if (dir === 'next' && day >= totalDays) {
       if (isCurrentMonth) return
       const [y, m] = monthKey.split('-').map(Number)
@@ -134,7 +141,7 @@ export function TodayPage({
     triggerFlip(dir === 'prev' ? 'left' : 'right')
     if (dir === 'prev') onDateChange(dateKeyOf(monthKey, Math.max(1, day - 1)))
     else onDateChange(dateKeyOf(monthKey, Math.min(totalDays, day + 1)))
-  }, [dateKey, monthKey, totalDays, isCurrentMonth, onDateChange, triggerFlip])
+  }, [dateKey, monthKey, totalDays, isCurrentMonth, minDateKey, onDateChange, triggerFlip])
 
   const handleSelectDay = useCallback((day: number) => {
     const newKey = dateKeyOf(monthKey, day)
@@ -150,7 +157,13 @@ export function TodayPage({
   }, [dateKey, todayKey, todayDay, onDateChange, triggerFlip])
 
   const toggleFold = (section: FoldSection) => {
-    setFoldSection((prev) => (prev === section ? null : section))
+    setFoldSection((prev) => {
+      if (prev === section) return null
+      if (section === 'submit' && onCheckQuota) {
+        onCheckQuota().then((c) => setQuotaLeft(Math.max(0, 10 - c)))
+      }
+      return section
+    })
   }
 
   const executeSave = () => {
@@ -344,7 +357,10 @@ export function TodayPage({
           isCurrentMonth={isCurrentMonth}
           recordedDays={recordedDays}
           onSelectDay={handleSelectDay}
-          onPrevMonth={() => onMonthChange(shiftMonthKey(monthKey, -1))}
+          onPrevMonth={() => {
+            const prev = shiftMonthKey(monthKey, -1)
+            if (prev >= minDateKey.slice(0, 7)) onMonthChange(prev)
+          }}
           onNextMonth={() => {
             const next = shiftMonthKey(monthKey, 1)
             if (toMonthKey(todayKey) >= next) onMonthChange(next)
@@ -384,7 +400,14 @@ export function TodayPage({
 
       {foldSection === 'submit' && (
         <div className="block">
-          <p className="block-note">分享到精选池，默认仅自己可见。</p>
+          <p className="block-note">
+            分享到精选池，默认仅自己可见。
+            {quotaLeft !== null && (
+              <span style={{ color: quotaLeft <= 2 ? '#b47d65' : 'var(--ink-soft)' }}>
+                {' '}本小时还可投稿 {quotaLeft} 次。
+              </span>
+            )}
+          </p>
           <label className="consent-row">
             <input type="checkbox" checked={consentPublic} onChange={(e) => setConsentPublic(e.target.checked)} />
             <span>同意公开展示</span>

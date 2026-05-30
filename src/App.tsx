@@ -36,6 +36,8 @@ type PageTab = {
   label: string
 }
 
+export const MIN_DATE_KEY = '2026-04-01'
+
 const PAGE_TABS: PageTab[] = [
   { id: 'today', label: '今日' },
   { id: 'featured', label: '精选' },
@@ -101,6 +103,7 @@ function App() {
     featuredTemplates,
     mySubmissions,
     reviewQueue,
+    getHourlySubmissionCount,
     handleSubmitMood,
     handleWithdrawSubmission,
     handleRejectSubmission,
@@ -268,6 +271,7 @@ function App() {
         dateKey={entryDateKey}
         todayKey={todayKey}
         monthKey={monthKey}
+        minDateKey={MIN_DATE_KEY}
         dateLabel={formatCnDate(entryDateKey)}
         entry={todayEntry}
         monthEntries={monthEntries}
@@ -277,6 +281,7 @@ function App() {
         onDateChange={handleEntryDateChange}
         onMonthChange={handleMonthChange}
         onSave={handleSaveToday}
+        onCheckQuota={getHourlySubmissionCount}
         onSubmitMood={handleSubmitMood}
       />
     )
@@ -309,6 +314,7 @@ function App() {
     featuredTemplates,
     mySubmissions,
     reviewQueue,
+    getHourlySubmissionCount,
     handleSubmitMood,
     handleWithdrawSubmission,
     handleRejectSubmission,
