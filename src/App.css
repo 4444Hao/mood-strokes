@@ -523,7 +523,7 @@
   top: 0.2rem;
   bottom: 0.2rem;
   width: 5px;
-  border-left: 1.5px dashed rgba(139, 101, 69, 0.25);
+  border-left: 1.5px dashed rgba(155, 130, 100, 0.18);
 }
 
 .folio-book-spine::before {
@@ -536,9 +536,9 @@
   background: repeating-linear-gradient(
     to bottom,
     transparent 0,
-    transparent 8px,
-    rgba(160, 127, 94, 0.22) 9px,
-    rgba(160, 127, 94, 0.22) 9.5px
+    transparent 9px,
+    rgba(165, 140, 110, 0.14) 10px,
+    rgba(165, 140, 110, 0.14) 10.5px
   );
   border-radius: 2px;
 }
@@ -547,11 +547,43 @@
   position: relative;
   z-index: 1;
   min-height: 340px;
-  border: 1px solid rgba(126, 96, 69, 0.14);
+  border: 1px solid rgba(150, 125, 95, 0.12);
   border-radius: 4px 14px 14px 4px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
-    rgba(255, 250, 243, 0.7);
+    /* subtle fiber lines */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(180, 155, 125, 0.03) 2px,
+      rgba(180, 155, 125, 0.03) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(175, 150, 120, 0.02) 3px,
+      rgba(175, 150, 120, 0.02) 4px
+    ),
+    /* grain noise */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 1px,
+      rgba(200, 175, 145, 0.015) 1px,
+      rgba(200, 175, 145, 0.015) 2px
+    ),
+    /* warm base */
+    linear-gradient(
+      180deg,
+      rgba(253, 248, 238, 0.9) 0%,
+      rgba(250, 243, 230, 0.85) 40%,
+      rgba(248, 240, 225, 0.88) 100%
+    ),
+    #faf5ea;
+  box-shadow:
+    2px 3px 8px rgba(140, 115, 85, 0.06),
+    0 0 1px rgba(160, 135, 100, 0.04) inset;
   padding: 1rem;
   overflow: hidden;
   display: grid;
@@ -603,33 +635,25 @@
 .folio-edge.prev { left: 0; }
 .folio-edge.next { right: 0; }
 
-/* 排版模板 */
+/* 排版模板 — 4 表情 */
 
-/* A: 并排 */
-.folio-side-by-side {
+.folio-4 {
   grid-template-columns: 1fr 1fr;
-  align-items: start;
-}
-
-/* B: 大左小右 */
-.folio-big-left {
-  grid-template-columns: 1.3fr 0.7fr;
-  align-items: start;
-}
-
-/* C: 小左大右 */
-.folio-big-right {
-  grid-template-columns: 0.7fr 1.3fr;
-  align-items: start;
-}
-
-/* D: 斜对角 */
-.folio-diagonal {
-  grid-template-columns: 1fr;
   grid-template-rows: auto auto;
+  gap: 0.5rem;
+  align-items: start;
 }
-.folio-diagonal .folio-card-0 { justify-self: start; width: 65%; }
-.folio-diagonal .folio-card-1 { justify-self: end; width: 65%; margin-top: 0.4rem; }
+
+.folio-stagger-a .folio-card-1 { margin-top: 0.5rem; }
+.folio-stagger-a .folio-card-2 { margin-top: -0.2rem; }
+
+.folio-stagger-b .folio-card-0 { margin-top: 0.4rem; }
+.folio-stagger-b .folio-card-3 { margin-top: 0.4rem; }
+
+.folio-free .folio-card-0 { margin-left: -0.3rem; }
+.folio-free .folio-card-1 { margin-right: -0.2rem; }
+.folio-free .folio-card-2 { margin-left: -0.2rem; margin-top: 0.2rem; }
+.folio-free .folio-card-3 { margin-right: -0.3rem; margin-top: 0.2rem; }
 
 /* 表情卡片 */
 
@@ -638,37 +662,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem;
+  gap: 0.2rem;
+  padding: 0.25rem;
 }
 
-.folio-card-0 { transform: rotate(-1.5deg); }
-.folio-card-1 { transform: rotate(2deg); }
+.folio-card-0 { transform: rotate(-2deg); }
+.folio-card-1 { transform: rotate(2.5deg); }
+.folio-card-2 { transform: rotate(1.5deg); }
+.folio-card-3 { transform: rotate(-2.5deg); }
 
 .folio-tape {
   position: absolute;
-  top: -3px;
-  height: 9px;
-  width: 42px;
-  background: rgba(235, 222, 198, 0.55);
-  border: 1px solid rgba(185, 156, 123, 0.2);
+  top: -2px;
+  height: 7px;
+  width: 34px;
+  background: rgba(240, 228, 208, 0.5);
+  border: 1px solid rgba(185, 160, 130, 0.15);
   border-radius: 1px;
   z-index: 5;
+  box-shadow: 0 1px 2px rgba(160, 135, 105, 0.06);
 }
 
-.folio-card-0 .folio-tape {
-  left: 12px;
-  transform: rotate(-7deg);
-}
-
-.folio-card-1 .folio-tape {
-  left: 14px;
-  transform: rotate(11deg);
-}
+.folio-card-0 .folio-tape { left: 10px; transform: rotate(-8deg); }
+.folio-card-1 .folio-tape { right: 10px; left: auto; transform: rotate(10deg); }
+.folio-card-2 .folio-tape { left: 8px; transform: rotate(-5deg); }
+.folio-card-3 .folio-tape { right: 8px; left: auto; transform: rotate(12deg); }
 
 .folio-face {
   width: 100%;
-  max-width: 140px;
+  max-width: 110px;
   aspect-ratio: 1 / 1;
 }
 
@@ -676,26 +698,19 @@
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
 }
 
 .folio-title {
   margin: 0;
   font-family: var(--font-title);
-  font-size: 0.95rem;
-}
-
-.folio-note {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.83rem;
-  line-height: 1.45;
+  font-size: 0.85rem;
 }
 
 .folio-author {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   opacity: 0.7;
 }
 
@@ -719,29 +734,24 @@
 
 @media (max-width: 680px) {
   .folio-leaf {
-    min-height: 300px;
-    padding: 0.7rem;
+    min-height: auto;
+    padding: 0.5rem;
   }
 
-  .folio-side-by-side,
-  .folio-big-left,
-  .folio-big-right {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-  }
-
-  .folio-big-left .folio-card-0,
-  .folio-big-right .folio-card-1 {
-    grid-column: span 1;
+  .folio-4 {
+    gap: 0.3rem;
   }
 
   .folio-face {
-    max-width: 120px;
+    max-width: 88px;
   }
 
-  .folio-diagonal .folio-card-0,
-  .folio-diagonal .folio-card-1 {
-    width: 75%;
+  .folio-title { font-size: 0.75rem; }
+  .folio-author { font-size: 0.65rem; }
+
+  .folio-tape {
+    height: 6px;
+    width: 28px;
   }
 }
 

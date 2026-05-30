@@ -2,11 +2,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { MoodFaceSvg } from '../components/MoodFaceSvg'
 import type { FeaturedTemplate } from '../types/curation'
 
-const PAGE_SIZE = 2
+const PAGE_SIZE = 4
 
-type LayoutId = 'side-by-side' | 'big-left' | 'big-right' | 'diagonal'
+type LayoutId = 'grid-2x2' | 'stagger-a' | 'stagger-b' | 'free'
 
-const LAYOUTS: LayoutId[] = ['side-by-side', 'big-left', 'big-right', 'diagonal']
+const LAYOUTS: LayoutId[] = ['grid-2x2', 'stagger-a', 'stagger-b', 'free']
 
 type FeaturedPageProps = {
   templates: FeaturedTemplate[]
@@ -82,7 +82,7 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
       <div className="folio-book">
         <div className="folio-book-spine" aria-hidden />
 
-        <article className={`folio-leaf ${flipClass} folio-${layout}`}>
+        <article className={`folio-leaf folio-4 ${flipClass} folio-${layout}`}>
           <div className="folio-edge prev" onClick={() => goTo('prev')} aria-label="上一页" />
           <div className="folio-edge next" onClick={() => goTo('next')} aria-label="下一页" />
 
@@ -92,7 +92,6 @@ export function FeaturedPage({ templates }: FeaturedPageProps) {
               <MoodFaceSvg face={t.face} className="folio-face" />
               <div className="folio-text">
                 <p className="folio-title">{t.title}</p>
-                <p className="folio-note">{t.note || t.description || ''}</p>
                 <p className="folio-author">by {authorLabel(t)}</p>
               </div>
             </div>
