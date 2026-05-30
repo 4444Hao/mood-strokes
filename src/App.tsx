@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRegisterSW } from 'virtual:pwa-register/react'
 import './App.css'
 import { useAuth } from './hooks/useAuth'
 import { useCuration } from './hooks/useCuration'
@@ -53,19 +52,6 @@ function hashToPage(hash: string): PageId | null {
 }
 
 function App() {
-  const [showUpdate, setShowUpdate] = useState(false)
-
-  const {
-    updateServiceWorker,
-  } = useRegisterSW({
-    onNeedRefresh() {
-      setShowUpdate(true)
-    },
-    onOfflineReady() {
-      // first-time offline ready — silent
-    },
-  })
-
   const [activePage, setActivePage] = useState<PageId>(
     () => hashToPage(window.location.hash) ?? 'today',
   )
@@ -342,15 +328,6 @@ function App() {
       <main className="main-content">
         <ErrorBoundary>{activeContent}</ErrorBoundary>
       </main>
-
-      {showUpdate && (
-        <div className="update-toast">
-          <span>有新版本可用</span>
-          <button type="button" className="mini-chip" onClick={() => { updateServiceWorker(); setShowUpdate(false) }}>
-            立即更新
-          </button>
-        </div>
-      )}
     </div>
   )
 }

@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,json}'],
+      },
       includeAssets: ['favicon.svg', 'pwa-icon.svg'],
       manifest: {
         name: '三笔心情',
@@ -21,6 +24,12 @@ export default defineConfig({
           {
             src: '/pwa-icon.svg',
             sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/pwa-icon.svg',
+            sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable',
           },
