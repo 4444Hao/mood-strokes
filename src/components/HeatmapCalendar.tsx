@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
+import { MoodFaceSvg } from './MoodFaceSvg'
 import { daysInMonth } from '../lib/date'
+import type { MoodFace } from '../types/mood'
 
 type HeatmapCalendarProps = {
   monthKey: string
@@ -8,6 +10,7 @@ type HeatmapCalendarProps = {
   todayDay: number
   isCurrentMonth: boolean
   recordedDays: Set<number>
+  facesByDay: Map<number, MoodFace>
   onSelectDay: (day: number) => void
   onPrevMonth: () => void
   onNextMonth: () => void
@@ -28,6 +31,7 @@ export function HeatmapCalendar({
   todayDay,
   isCurrentMonth,
   recordedDays,
+  facesByDay,
   onSelectDay,
   onPrevMonth,
   onNextMonth,
@@ -87,6 +91,8 @@ export function HeatmapCalendar({
               if (isSelected) className += ' is-selected'
               if (isToday) className += ' is-today'
 
+              const face = facesByDay.get(cell.day)
+
               return (
                 <button
                   key={cell.key}
@@ -95,6 +101,9 @@ export function HeatmapCalendar({
                   onClick={() => onSelectDay(cell.day!)}
                   aria-label={`${cell.day}号${hasRecord ? '有记录' : '无记录'}${isToday ? '今天' : ''}`}
                 >
+                  {face ? (
+                    <MoodFaceSvg face={face} className="heatmap-thumb" />
+                  ) : null}
                   <span className="heatmap-dot-inner">{cell.day}</span>
                 </button>
               )

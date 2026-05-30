@@ -97,6 +97,15 @@ export function TodayPage({
     return set
   }, [monthEntries])
 
+  const facesByDay = useMemo(() => {
+    const map = new Map<number, MoodFace>()
+    monthEntries.forEach((e) => {
+      const d = Number(e.date.slice(-2))
+      if (d >= 1 && d <= 31) map.set(d, e.face)
+    })
+    return map
+  }, [monthEntries])
+
   useEffect(() => {
     mountedRef.current = true
     return () => { mountedRef.current = false }
@@ -356,6 +365,7 @@ export function TodayPage({
           todayDay={todayDay}
           isCurrentMonth={isCurrentMonth}
           recordedDays={recordedDays}
+          facesByDay={facesByDay}
           onSelectDay={handleSelectDay}
           onPrevMonth={() => {
             const prev = shiftMonthKey(monthKey, -1)

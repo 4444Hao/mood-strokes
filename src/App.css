@@ -1131,6 +1131,8 @@
   cursor: pointer;
   transition: all 150ms ease;
   line-height: 1;
+  position: relative;
+  overflow: hidden;
 }
 
 .heatmap-dot.has-record {
@@ -1159,6 +1161,27 @@
 
 .heatmap-dot-inner {
   pointer-events: none;
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+  text-shadow: 0 0 2px rgba(255,251,244,0.8);
+  z-index: 2;
+}
+
+.heatmap-dot.has-record .heatmap-dot-inner {
+  color: rgba(255,250,242,0.9);
+  text-shadow: 0 0 3px rgba(47,34,24,0.5);
+}
+
+.heatmap-thumb {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  opacity: 0.75;
+  z-index: 1;
 }
 
 /* ── 挂历 · 翻本子 ── */
