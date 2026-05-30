@@ -253,7 +253,10 @@ export function SettingsPage(props: SettingsPageProps) {
   }
 
   const inputDialogRef = useRef<InputDialogState | null>(null)
-  inputDialogRef.current = inputDialog
+
+  useEffect(() => {
+    inputDialogRef.current = inputDialog
+  }, [inputDialog])
 
   const confirmInputAction = async () => {
     if (!inputDialog || dialogBusy) return
