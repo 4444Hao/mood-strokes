@@ -56,60 +56,6 @@
   <img src="./screenshots/登录与数据存储.jpg" width="24%" alt="登录与数据存储" />
 </p>
 
-## 🗂 项目结构
-
-```
-src/
-├── components/
-│   ├── ErrorBoundary.tsx          # 崩溃兜底
-│   ├── HeatmapCalendar.tsx        # 热力图月历
-│   ├── MoodFaceSvg.tsx            # 表情 SVG 渲染器
-│   ├── ShareDialog.tsx            # 分享图预览
-│   └── ThreeStrokeMoodEditor.tsx  # 三笔编辑器（绘制+微调两阶段）
-├── hooks/
-│   ├── useAuth.ts                 # 认证 + 同步 + 昵称
-│   └── useCuration.ts             # 精选 + 审核 + 投稿
-├── lib/
-│   ├── storage.ts                 # localStorage CRUD + 缓存 + 结构校验
-│   ├── cloudSync.ts               # Supabase 认证 + OTP + 同步
-│   ├── curation.ts                # 投稿 + 审核 + 精选查询
-│   ├── strokeAdjust.ts            # 笔触微调引擎（nudge/eye/mouth/tension）
-│   ├── shareImage.ts              # Canvas 合成分享图
-│   ├── presets.ts                 # 预设表情模板
-│   ├── date.ts                    # 日期工具
-│   └── supabase.ts                # Supabase 客户端
-├── pages/
-│   ├── TodayPage.tsx              # 今日：热力图 + 画板书本 + 备注保存
-│   ├── FeaturedPage.tsx           # 精选：4 表情挂历翻页 + 纸纹理
-│   └── SettingsPage.tsx           # 设置：分组卡片 + 同步条 + 审核
-├── types/
-│   ├── mood.ts                    # MoodFace / MoodEntry 类型
-│   └── curation.ts                # Submission / Template 类型
-├── App.tsx                        # 根组件：3-tab 路由
-├── App.css                        # 全部样式
-└── index.css                      # CSS 变量
-supabase/
-└── schema.sql                     # 完整数据库定义（表/RLS/触发器/RPC）
-```
-
-## 🚀 本地部署
-
-```bash
-npm install
-cp .env.example .env   # 填入 Supabase URL + anon key
-npm run dev
-```
-
-```bash
-npm run lint           # ESLint
-npm run test:run       # Vitest（39 个用例）
-npm run build          # tsc + vite 生产构建
-npm run security:scan  # 敏感信息扫描
-```
-
-Supabase 初始化：在 SQL Editor 执行 `supabase/schema.sql`
-
----
 
 > ✨ 这是一个 Vibe Coding 实验项目。欢迎使用与交流：
 > - GitHub Issues
