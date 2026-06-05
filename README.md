@@ -56,21 +56,6 @@
   <img src="./screenshots/登录与数据存储.jpg" width="24%" alt="登录与数据存储" />
 </p>
 
-## 🧱 架构总览
-
-```mermaid
-graph TD
-    A[用户浏览器<br/>PWA] --> B[localStorage<br/>离线数据自有]
-    A --> C[可选云同步<br/>Supabase]
-    B --> D[JSON 导入/导出<br/>换设备不依赖云端]
-    C --> E[OTP 验证码登录]
-    C --> F[三种同步模式]
-    C --> G[RLS 行级安全]
-    A --> H[Cloudflare Pages<br/>自动部署]
-    H --> I[GitHub Push<br/>tsc + vite build]
-    H --> J[CSP 安全头]
-```
-
 ## 🗂 项目结构
 
 ```
